@@ -35,6 +35,8 @@ if (cmd === "serve") {
   console.log(`\n graded: ${res.graded?.graded ?? 0} | agents: ${res.agents?.ran ? `${res.agents.analysed} analysed, $${res.agents.spend}` : res.agents?.reason}`);
 } else if (cmd === "loop") {
   const { loop } = await import("./src/pipeline.mjs");
+  const { acquire } = await import("./src/lock.mjs");
+  if (!acquire()) process.exit(1);
   await loop(loadConfig());
 } else if (cmd === "adapt") {
   const { propose } = await import("./src/adapt.mjs");
