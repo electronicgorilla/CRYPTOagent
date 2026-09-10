@@ -79,12 +79,26 @@
   },
   "telegram": {
     "_comment": "Channels as agents: every call is logged to the ledger as tg:<channel>, graded by the same grader, and ranked in the same scorecard. mode: public (no auth, PUBLIC channels only) | bot (TELEGRAM_BOT_TOKEN, bot must be channel admin) | mtproto (TELEGRAM_SESSION, sees everything your account sees).",
-    "enabled": false,
+    "enabled": true,
     "mode": "public",
-    "channels": [],
+    "channels": [
+      "dexstrending",
+      "xelfalpha",
+      "solanatrending",
+      "WatcherGuru",
+      "bitcoin"
+    ],
     "horizonMinutes": 60,
     "maxMessageAgeMinutes": 90,
     "fetchLimit": 30
+  },
+  "predict": {
+    "_comment": "Bootstrapped ranking + volatility forecasting. Ranks are re-run under perturbed weights so a top slot that only survives a third of the re-weightings is reported as unstable rather than as a call.",
+    "enabled": true,
+    "horizonMinutes": 60,
+    "bootstrapPasses": 200,
+    "weightJitter": 0.35,
+    "logForecasts": true
   },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",

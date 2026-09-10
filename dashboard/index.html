@@ -127,6 +127,17 @@
   .beats{color:var(--good);font-weight:700} .loses{color:var(--critical);font-weight:700}
   .scroll{overflow-x:auto}
 
+  /* ---------- volatility band ---------- */
+  .band{position:relative;height:18px;background:var(--grid);border-radius:3px;overflow:hidden}
+  .band .p90{position:absolute;top:0;bottom:0;background:rgba(201,133,0,.22)}
+  .band .p50{position:absolute;top:0;bottom:0;background:rgba(201,133,0,.55)}
+  .band .mid{position:absolute;top:0;bottom:0;width:1.5px;background:var(--ink-2)}
+  .band .act{position:absolute;top:-2px;bottom:-2px;width:2.5px;background:var(--s1);box-shadow:0 0 0 1.5px var(--surface)}
+  .pred{background:var(--surface-2);border:1px solid var(--hairline);border-left:3px solid var(--s1);
+    border-radius:0 8px 8px 0;padding:11px 13px}
+  .pred .flat{font-size:14px;font-weight:650;color:var(--ink);margin-bottom:6px}
+  .chain li{color:var(--ink-2)}
+
   /* ---------- tooltip ---------- */
   #tip{position:fixed;pointer-events:none;z-index:99;background:var(--surface-2);
     border:1px solid var(--hairline);border-radius:7px;padding:7px 10px;font-size:11.5px;
@@ -141,6 +152,7 @@
   <div class="tabs">
     <button class="tab on" id="tabRadar">Radar</button>
     <button class="tab" id="tabScore">Scorecard</button>
+    <button class="tab" id="tabFc">Forecast</button>
     <button class="tab" id="tabTg">Telegram</button>
     <button class="tab" id="tabAdapt">Adaptation</button>
   </div>
@@ -169,6 +181,13 @@
   <div class="card">
     <h2>Open predictions</h2>
     <div id="openWrap"><div class="empty">loading…</div></div>
+  </div>
+</div>
+
+<div id="fcView" hidden style="padding:14px;display:grid;gap:14px">
+  <div class="card">
+    <h2>Forecasts <span class="r">stated before being asked, graded after</span></h2>
+    <div id="fcWrap"><div class="empty">loading…</div></div>
   </div>
 </div>
 
@@ -403,6 +422,7 @@ async function renderDetail(t){
     <div class="grp"><h3>Thesis</h3>${list(a.thesis)}</div>
     <div class="grp risk"><h3>Risks</h3>${list(a.risks)}</div>
     <div class="grp"><h3>Invalidation — your stop list</h3>${list(a.invalidation)}</div>
+    ${predHtml(t)}
     ${panelHtml(panel)}
     <div class="grp"><h3>Notes <span style="text-transform:none;letter-spacing:0">(fed to the arbiter)</span></h3>
       <textarea id="note">${esc(t.note||'')}</textarea>
@@ -414,6 +434,73 @@ async function renderDetail(t){
       headers:{'Content-Type':'application/json'},body:JSON.stringify({note:$('#note').value})});
     $('#saveNote').textContent='Saved'; setTimeout(()=>$('#saveNote').textContent='Save',1200);
   };
+}
+
+// ---------- prediction ----------
+// A band drawn on a symmetric +/- move axis, so the forecast reads as a RANGE
+// rather than a false-precision point estimate.
+function volBand(v, actual){
+  if(!v) return '';
+  const max = Math.max(v.expected_move_p90 * 1.15, Math.abs(actual ?? 0) * 1.1, 5);
+  const w = p => (p / max) * 50;
+  return `<div class="band" data-tip="p50 &plusmn;${v.expected_move_p50}% &middot; p90 &plusmn;${v.expected_move_p90}%${actual!=null?` &middot; actual ${actual>0?'+':''}${actual}%`:''}">
+      <i class="p90" style="left:${50-w(v.expected_move_p90)}%;width:${2*w(v.expected_move_p90)}%"></i>
+      <i class="p50" style="left:${50-w(v.expected_move_p50)}%;width:${2*w(v.expected_move_p50)}%"></i>
+      <i class="mid" style="left:50%"></i>
+      ${actual!=null?`<i class="act" style="left:${Math.max(0,Math.min(100,50+(actual/max)*50))}%"></i>`:''}
+    </div>`;
+}
+
+function predHtml(t){
+  const p = t.prediction, st = t.stability;
+  if(!p) return '';
+  const stable = (st?.p_top5 ?? 0) >= 0.5;
+  return `<div class="grp"><h3>Forecast</h3>
+    <div class="pred">
+      <div class="flat">${p.call === 'pass'
+        ? 'No read \u2014 declining to call this one.'
+        : `${p.call === 'long' ? 'Up' : 'Down'} over the next ${p.horizon_minutes} minutes \u2014 P(up) ${Math.round(p.p_up*100)}%, expected move &plusmn;${p.volatility.expected_move_p50}%.`}</div>
+      ${volBand(p.volatility)}
+      <div class="sub" style="display:flex;justify-content:space-between;margin-top:4px">
+        <span>&minus;${p.volatility.expected_move_p90}%</span><span>typical \u00b1${p.volatility.expected_move_p50}%</span><span>+${p.volatility.expected_move_p90}%</span></div>
+      <div class="grp" style="margin:12px 0 0"><h3>The chain</h3>
+        <ul class="chain">${(p.chain||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>
+      <p class="sub" style="margin:8px 0 0">
+        Rank stability: top-5 in <b style="color:${stable?'var(--good)':'var(--warn)'}">${Math.round((st?.p_top5??0)*100)}%</b>
+        of ${st?.passes??0} re-weightings (median rank ${st?.median_rank ?? '\u2014'}).
+        ${stable?'':'Unstable \u2014 the ranking is the weights talking, not the token.'}
+      </p>
+    </div></div>`;
+}
+
+async function loadForecast(){
+  const d = await fetch('/api/tokens').then(r=>r.json()).catch(()=>null);
+  if(!d) return;
+  const rows = d.tokens.filter(t=>t.prediction);
+  $('#fcWrap').innerHTML = rows.length ? `<div class="note">
+      Direction over an hour is close to a coin flip, so the engine mostly declines it.
+      <b>Size is the forecastable part</b> \u2014 the band is the expected absolute move
+      (dark = typical, light = tail), and the ledger grades whether reality landed inside it.
+      A rank that survives fewer than half the re-weightings is reported as unstable rather
+      than dressed up as a call.
+    </div><div class="scroll"><table><thead><tr>
+      <th>Token</th><th>Call</th><th>P(up)</th><th>Conv</th>
+      <th style="text-align:left;min-width:150px">Expected move (60m)</th>
+      <th>p50</th><th>p90</th><th>Stability</th><th style="text-align:left">Lead observation</th>
+    </tr></thead><tbody>${rows.map(t=>{
+      const p=t.prediction, st=t.stability, stable=(st?.p_top5??0)>=0.5;
+      return `<tr>
+        <td><b>${esc(t.feat.symbol||'?')}</b></td>
+        <td><span class="call ${esc(p.call)}">${esc(p.call)}</span></td>
+        <td class="num">${Math.round(p.p_up*100)}%</td>
+        <td class="num">${Math.round(p.conviction*100)}%</td>
+        <td>${volBand(p.volatility)}</td>
+        <td class="num">&plusmn;${p.volatility.expected_move_p50}%</td>
+        <td class="num sub">&plusmn;${p.volatility.expected_move_p90}%</td>
+        <td class="num" style="color:${stable?'var(--good)':'var(--warn)'}">${Math.round((st?.p_top5??0)*100)}%</td>
+        <td style="text-align:left;max-width:330px" class="sub">${esc((p.chain||[])[0]||'—')}</td>
+      </tr>`;}).join('')}</tbody></table></div>`
+    : '<div class="empty">No forecasts yet — run a scan.</div>';
 }
 
 // ---------- scorecard ----------
@@ -543,17 +630,19 @@ async function loadAdapt(){
 
 // ---------- tabs ----------
 function show(which){
-  for(const [id,view] of [['tabRadar','#radarView'],['tabScore','#scoreView'],['tabTg','#tgView'],['tabAdapt','#adaptView']]){
+  for(const [id,view] of [['tabRadar','#radarView'],['tabScore','#scoreView'],['tabFc','#fcView'],['tabTg','#tgView'],['tabAdapt','#adaptView']]){
     const on = id==='tab'+which;
     $('#'+id).classList.toggle('on',on);
     $(view).hidden=!on;
   }
   if(which==='Score') loadScorecard();
+  if(which==='Fc') loadForecast();
   if(which==='Tg') loadTelegram();
   if(which==='Adapt') loadAdapt();
 }
 $('#tabRadar').onclick=()=>show('Radar');
 $('#tabScore').onclick=()=>show('Score');
+$('#tabFc').onclick=()=>show('Fc');
 $('#tabTg').onclick=()=>show('Tg');
 $('#tabAdapt').onclick=()=>show('Adapt');
 

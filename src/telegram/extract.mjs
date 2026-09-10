@@ -31,9 +31,14 @@ const CALL_CUES = [
 // Phrases that make it an EXIT - the single most valuable signal a channel
 // emits, and the one most systems ignore (taxonomy #18).
 const EXIT_CUES = [
-  /\b(taking|took)\s+profit/i, /\bsold\b/i, /\bselling\b/i, /\bout\b/i,
-  /\bexit(ing|ed)?\b/i, /\bclosed?\b/i, /\btrim(ming|med)?\b/i, /\brug(ged)?\b/i,
-  /\bdead\b/i, /\bstop(ped)?\s*loss/i,
+  /\b(taking|took)\s+profit/i, /\bsold\b/i, /\bselling\b/i,
+  // "out" must mean an EXIT, not "reached out" / "check it out" / "out of".
+  // The bare word matched ordinary news copy and manufactured exit signals
+  // out of nothing - it classified "Boeing reached out" as someone selling.
+  /\b(i'?m|we'?re|all|everyone|getting)\s+out\b/i,
+  /\bout\s+at\s+[\d$]/i, /\bcashed?\s+out\b/i,
+  /\bexit(ing|ed)?\b/i, /\bclosed\s+(the\s+)?(position|trade|bag)/i,
+  /\btrim(ming|med)?\b/i, /\brug(ged|pull)\b/i, /\bstop(ped)?\s*loss/i,
 ];
 // Explicitly NOT a fresh call, even when it names a token.
 const NOT_A_CALL = [
@@ -96,5 +101,9 @@ export function htmlToText(html) {
     .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
     .replace(/&nbsp;/g, " ")
+    // Telegram encodes "$" as &#036;, which silently hid every ticker in
+    // channels that use numeric entities. Decode them before matching.
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .trim();
 }

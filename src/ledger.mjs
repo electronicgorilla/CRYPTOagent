@@ -49,7 +49,7 @@ export function save(rows) {
  * Record one prediction. `pred` is the agent's structured output; `feat`/`score`
  * are the snapshot it was made from.
  */
-export function record({ agent, model, pred, feat, score, cost = 0, phase = null }) {
+export function record({ agent, model, pred, feat, score, cost = 0, phase = null, extra = null }) {
   const rows = load();
   const row = {
     id: randomUUID(),
@@ -75,6 +75,9 @@ export function record({ agent, model, pred, feat, score, cost = 0, phase = null
     features: feat.n ? { ...feat.n } : null,
     fomo: feat.fomo ? { score: feat.fomo.fomo, ...feat.fomo.components } : null,
     cost,
+    // Anything the agent forecast beyond direction - notably the expected
+    // move band, which the grader scores separately from the sign.
+    ...(extra || {}),
     outcome: null,
   };
   rows.push(row);

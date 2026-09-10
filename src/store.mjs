@@ -21,7 +21,8 @@ export function saveScan(rows) {
   const ts = Date.now() / 1000;
   const payload = {
     ts,
-    tokens: rows.map((r) => ({ feat: r.feat, score: r.score, advice: r.advice, panel: r.panel, note: r.note })),
+    tokens: rows.map((r) => ({ feat: r.feat, score: r.score, advice: r.advice, panel: r.panel,
+      note: r.note, prediction: r.prediction, stability: r.stability })),
   };
   writeJson(join(DATA_DIR, "latest.json"), payload);
   writeJson(join(SCANS, `${Math.round(ts)}.json`), payload);

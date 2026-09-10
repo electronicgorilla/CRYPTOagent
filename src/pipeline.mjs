@@ -8,12 +8,14 @@ import * as social from "./social.mjs";
 import { buildCohort, buildFomo } from "./fomo.mjs";
 import * as adapt from "./adapt.mjs";
 import { pollChannels } from "./telegram/calls.mjs";
+import { runPredictions } from "./predict.mjs";
 import { buildFeatures } from "./features.mjs";
 import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
 import * as orchestrator from "./agents/orchestrator.mjs";
 import { gradeDue } from "./grader.mjs";
 import * as store from "./store.mjs";
+import * as ledger from "./ledger.mjs";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -94,6 +96,29 @@ export async function runScan({ cfg, verbose = true } = {}) {
   assignVerdicts(rows, cfg);
   rows.sort((a, b) => b.score.composite - a.score.composite);
   if (verbose) console.log(`[fomo] session ${cohort.regime} (breadth ${(cohort.breadth*100).toFixed(0)}% green)`);
+
+  // --- pass 4: prediction. Commit to a falsifiable claim BEFORE being asked,
+  // then let the market answer it. Ranks are bootstrapped so an unstable top
+  // slot is reported as unstable rather than dressed up as a call.
+  if (cfg.predict?.enabled) {
+    const { horizon } = runPredictions(rows, cfg);
+    if (cfg.predict.logForecasts) {
+      for (const r of rows) {
+        const p = r.prediction;
+        if (!p || p.call === 'pass') continue; // a non-call is not logged as a forecast
+        ledger.record({
+          agent: 'jane', model: 'deterministic-bootstrap', cost: 0,
+          phase: r.advice.phase, feat: r.feat, score: r.score, pred: p,
+          extra: { volatility: p.volatility, stability: p.stability, p_up: p.p_up },
+        });
+      }
+    }
+    if (verbose) {
+      const calls = rows.filter((r) => r.prediction?.call !== 'pass');
+      console.log(`[predict] ${calls.length}/${rows.length} directional, horizon ${horizon}m, ` +
+        `median expected move ${rows.length ? rows[0].prediction?.volatility.expected_move_p50 : 0}%`);
+    }
+  }
   for (const r of rows) { delete r.pair; delete r.risk; }
 
   // Telegram channels are agents too - poll them BEFORE grading so a call made

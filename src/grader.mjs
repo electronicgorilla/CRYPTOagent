@@ -96,6 +96,12 @@ export async function gradeDue({ verbose = true } = {}) {
         exit_liq: dead ? 0 : p.liq,
         return_pct: Math.round(returnPct * 10) / 10,
         realised_direction: realised,
+        // Size, graded separately from sign. Direction over an hour is near a
+        // coin flip; the magnitude is the forecastable part and the one that
+        // position sizing actually depends on.
+        abs_move_pct: Math.round(Math.abs(returnPct) * 10) / 10,
+        vol_in_p50: r.volatility ? Math.abs(returnPct) <= r.volatility.expected_move_p50 : null,
+        vol_in_p90: r.volatility ? Math.abs(returnPct) <= r.volatility.expected_move_p90 : null,
         flat_band_pct: ledger.flatBandFor(r.horizon_minutes),
         correct,
         invalidated,
