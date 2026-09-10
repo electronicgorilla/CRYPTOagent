@@ -121,12 +121,17 @@
     "logForecasts": true
   },
   "regime": {
-    "_comment": "LAYER 0 - macro. EODHD free plan is 20 calls/DAY and batching bills PER SYMBOL (verified), so this defaults to SOL alone on a 90-minute floor (~16 calls/day). Add BTC-USD.CC only on a paid plan. Needs EODHD_API_KEY in .env.",
+    "_comment": "LAYER 0 macro. Default provider is CoinGecko: no API key, no quota cliff, and it returns an intraday series so realised range is measured rather than inferred. EODHD is used only if EODHD_API_KEY is set (its free tier is 20 calls/DAY billed per symbol, which is too rationed to gate every other score on).",
     "enabled": true,
+    "provider": "coingecko",
+    "coins": [
+      "solana",
+      "bitcoin"
+    ],
+    "refreshMinutes": 20,
     "symbols": [
       "SOL-USD.CC"
     ],
-    "refreshMinutes": 90,
     "dailyCallBudget": 16,
     "applyMultiplier": true
   },

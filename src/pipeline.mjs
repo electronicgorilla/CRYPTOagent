@@ -122,7 +122,7 @@ export async function runScan({ cfg, verbose = true } = {}) {
   rows.sort((a, b) => b.score.composite - a.score.composite);
   if (verbose) console.log(`[fomo] session ${cohort.regime} (breadth ${(cohort.breadth*100).toFixed(0)}% green)`);
   if (verbose && macro.available) console.log(`[regime] ${macro.regime} \u2014 ${macro.note}` +
-    (macro.cached ? ` (cached ${macro.ageMinutes}m)` : ` (${macro.callsToday}/${macro.budget} calls today)`));
+    (macro.cached ? ` (cached ${macro.ageMinutes}m)` : ` via ${macro.provider}`));
 
   // --- pass 4: prediction. Commit to a falsifiable claim BEFORE being asked,
   // then let the market answer it. Ranks are bootstrapped so an unstable top
