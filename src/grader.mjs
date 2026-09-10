@@ -52,8 +52,10 @@ function excursion(mint, entryPrice, fromTs, toTs) {
   };
 }
 
-const realisedDirection = (pct) =>
-  pct > ledger.FLAT_BAND_PCT ? "up" : pct < -ledger.FLAT_BAND_PCT ? "down" : "flat";
+const realisedDirection = (pct, horizonMinutes) => {
+  const band = ledger.flatBandFor(horizonMinutes);
+  return pct > band ? "up" : pct < -band ? "down" : "flat";
+};
 
 export async function gradeDue({ verbose = true } = {}) {
   const rows = ledger.due();
@@ -78,7 +80,7 @@ export async function gradeDue({ verbose = true } = {}) {
       : 0;
 
     const { mfe, mae, samples } = excursion(r.mint, r.entry_price, r.ts, horizonEnd);
-    const realised = realisedDirection(returnPct);
+    const realised = realisedDirection(returnPct, r.horizon_minutes);
     const correct = r.predicted_direction === realised;
 
     // Did the agent's own stated invalidation level get hit inside the horizon?
@@ -94,6 +96,7 @@ export async function gradeDue({ verbose = true } = {}) {
         exit_liq: dead ? 0 : p.liq,
         return_pct: Math.round(returnPct * 10) / 10,
         realised_direction: realised,
+        flat_band_pct: ledger.flatBandFor(r.horizon_minutes),
         correct,
         invalidated,
         mfe_pct: mfe,

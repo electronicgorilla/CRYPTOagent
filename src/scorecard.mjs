@@ -42,10 +42,13 @@ function scoreAgent(rows) {
   const graded = rows.filter((r) => r.outcome);
   const n = graded.length;
   if (!n) {
-    return { n_calls: rows.length, n_graded: 0, unproven: true };
+    return { n_calls: rows.length, n_graded: 0, n_directional: 0, unproven: true };
   }
 
-  const correct = graded.filter((r) => r.outcome.correct);
+  // Directional calls are the only ones a hit rate means anything for.
+  const directional = graded.filter((r) => r.call === "long" || r.call === "avoid");
+  const correct = directional.filter((r) => r.outcome.correct);
+  const passes = graded.filter((r) => r.call === "pass");
   const longs = graded.filter((r) => r.call === "long");
   const longReturns = longs.map((r) => r.outcome.return_pct);
   const avoids = graded.filter((r) => r.call === "avoid");
@@ -53,12 +56,12 @@ function scoreAgent(rows) {
   // Brier score over the directional claim: 0 is perfect, 0.25 is a coin flip
   // asserted at 50%, 1.0 is confidently wrong every time. Lower is better.
   const brier = mean(
-    graded.map((r) => (r.conviction - (r.outcome.correct ? 1 : 0)) ** 2)
+    directional.map((r) => (r.conviction - (r.outcome.correct ? 1 : 0)) ** 2)
   );
 
   // Calibration: does higher stated conviction actually produce more hits?
   const calibration = CONVICTION_BUCKETS.map(([lo, hi, label]) => {
-    const b = graded.filter((r) => r.conviction >= lo && r.conviction < hi);
+    const b = directional.filter((r) => r.conviction >= lo && r.conviction < hi);
     return {
       bucket: label,
       n: b.length,
@@ -72,8 +75,19 @@ function scoreAgent(rows) {
   return {
     n_calls: rows.length,
     n_graded: n,
-    unproven: n < 10, // fewer than 10 graded calls: no signal, don't trust it
-    hit_rate: r3(correct.length / n),
+    n_directional: directional.length,
+    // "unproven" counts DIRECTIONAL calls - 50 passes tell you nothing.
+    unproven: directional.length < 10,
+    hit_rate: directional.length ? r3(correct.length / directional.length) : null,
+    // A pass is right when staying out avoided a loss. Tracked separately so
+    // it never contaminates the directional hit rate.
+    passes: {
+      n: passes.length,
+      avoided_loss: passes.length
+        ? r3(passes.filter((r) => r.outcome.return_pct <= 0).length / passes.length)
+        : null,
+      missed_gain_pct: r1(mean(passes.filter((r) => r.outcome.return_pct > 0).map((r) => r.outcome.return_pct))),
+    },
     brier: r3(brier),
     calibration,
     longs: {
@@ -95,9 +109,9 @@ function scoreAgent(rows) {
     ),
     cost_usd: Math.round(cost * 10000) / 10000,
     cost_per_correct_usd: correct.length ? Math.round((cost / correct.length) * 10000) / 10000 : null,
-    edge_by_phase: groupEdge(graded, (r) => r.phase),
-    edge_by_tier: groupEdge(graded, (r) => r.mcap_tier),
-    edge_by_horizon: groupEdge(graded, (r) => `${r.horizon_minutes}m`),
+    edge_by_phase: groupEdge(directional, (r) => r.phase),
+    edge_by_tier: groupEdge(directional, (r) => r.mcap_tier),
+    edge_by_horizon: groupEdge(directional, (r) => `${r.horizon_minutes}m`),
   };
 }
 
@@ -153,10 +167,11 @@ export function forArbiter() {
     out[id] = a.n_graded
       ? {
           graded: a.n_graded,
+          directional_calls: a.n_directional,
           hit_rate: a.hit_rate,
           brier: a.brier,
           long_expectancy_pct: a.longs?.expectancy_pct ?? null,
-          status: a.unproven ? "UNPROVEN (<10 graded calls)" : "proven",
+          status: a.unproven ? "UNPROVEN (<10 directional calls)" : "proven",
         }
       : { graded: 0, status: "no track record yet" };
   }

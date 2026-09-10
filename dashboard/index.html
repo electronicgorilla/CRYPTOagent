@@ -318,10 +318,13 @@ async function loadScorecard(){
     return `<tr>
       <td><span class="sym">${esc(id)}</span>${a.unproven && a.n_graded? '<br><span class="sub">unproven (&lt;10)</span>':''}</td>
       <td>${a.n_graded||0}<span class="sub">/${a.n_calls}</span></td>
-      <td>${a.hit_rate==null?'&mdash;':`<b style="color:${a.hit_rate>=0.5?'var(--good)':'var(--bad)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
+      <td>${a.n_directional||0}</td>
+      <td>${a.hit_rate==null?'<span class="sub">no directional calls</span>':`<b style="color:${a.hit_rate>=0.5?'var(--good)':'var(--bad)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
       <td>${a.brier==null?'&mdash;':a.brier}</td>
       <td style="text-align:left">${calBar(a.calibration)}</td>
       <td>${a.longs?.n||0}</td>
+      <td>${a.passes?.avoided_loss==null?'&mdash;':Math.round(a.passes.avoided_loss*100)+'%'}</td>
+      <td>${a.passes?.missed_gain_pct==null?'&mdash;':`<span style="color:var(--warn)">+${a.passes.missed_gain_pct}%</span>`}</td>
       <td>${a.longs?.expectancy_pct==null?'&mdash;':`<span style="color:${a.longs.expectancy_pct>0?'var(--good)':'var(--bad)'}">${a.longs.expectancy_pct>0?'+':''}${a.longs.expectancy_pct}%</span>`}</td>
       <td>${a.longs?.rugged||0}</td>
       <td>$${(a.cost_usd||0).toFixed(3)}</td>
@@ -333,16 +336,16 @@ async function loadScorecard(){
     <div style="padding:10px 14px" class="sub">
       ${t.predictions} predictions logged &middot; ${t.graded} graded &middot; ${t.open} still open
       &middot; total spend $${t.spend_usd.toFixed(4)}
-      <br>Hit rate = predicted direction matched the realised move (&plusmn;5% dead band).
+      <br>Hit rate covers <b>directional calls only</b> (long/avoid) &mdash; a &ldquo;pass&rdquo; is a decision not to participate, not a forecast, so it is tracked separately under Passed&nbsp;OK / Missed. Dead band scales with horizon (15m &plusmn;8%, 60m &plusmn;18%, 6h &plusmn;35%).
       Brier: lower is better, 0.25 = a coin flip asserted at 50%.
       &ldquo;vs base&rdquo; compares each paid agent to the free deterministic score &mdash;
       an agent that can&rsquo;t beat it isn&rsquo;t worth paying for.
     </div>
     <table><thead><tr>
-      <th>Agent</th><th>Graded</th><th>Hit</th><th>Brier</th>
+      <th>Agent</th><th>Graded</th><th>Dir</th><th>Hit</th><th>Brier</th>
       <th style="text-align:left">Calibration</th>
-      <th>Longs</th><th>Long EV</th><th>Rugged</th><th>Spend</th><th>vs base</th>
-    </tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">no predictions yet &mdash; run a scan</td></tr>'}</tbody></table>`;
+      <th>Longs</th><th>Long EV</th><th>Passed&nbsp;OK</th><th>Missed</th><th>Rugged</th><th>Spend</th><th>vs base</th>
+    </tr></thead><tbody>${rows || '<tr><td colspan="13" class="muted">no predictions yet &mdash; run a scan</td></tr>'}</tbody></table>`;
 
   const open = await fetch('/api/ledger/open').then(r=>r.json()).catch(()=>[]);
   $('#openWrap').innerHTML = open.length ? `<table><thead><tr>

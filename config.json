@@ -11,23 +11,61 @@
       "useTopBoosts": true,
       "useLatestBoosts": true,
       "useLatestProfiles": true,
-      "searchTerms": ["SOL", "pump", "AI agent", "cat", "dog", "meme"]
+      "searchTerms": [
+        "SOL",
+        "pump",
+        "AI agent",
+        "cat",
+        "dog",
+        "meme"
+      ]
     }
   },
   "weights": {
-    "composite": { "attention": 0.34, "momentum": 0.34, "liquidityHealth": 0.32 },
-    "riskCutMax": 0.60,
-    "attention":       { "boost": 0.32, "profileRecency": 0.13, "socialsQuality": 0.20, "txnVelocity": 0.35 },
-    "momentum":        { "priceM5": 0.15, "priceH1": 0.30, "priceH6": 0.25, "volumeAccel": 0.30 },
-    "liquidityHealth": { "liqMcapRatio": 0.45, "turnover": 0.25, "liquidityAbs": 0.30 },
-    "risk":            { "rugcheck": 0.55, "lpLocked": 0.20, "mintAuthority": 0.15, "freezeAuthority": 0.10 }
+    "composite": {
+      "attention": 0.34,
+      "momentum": 0.34,
+      "liquidityHealth": 0.32
+    },
+    "riskCutMax": 0.6,
+    "attention": {
+      "boost": 0.32,
+      "profileRecency": 0.13,
+      "socialsQuality": 0.2,
+      "txnVelocity": 0.35
+    },
+    "momentum": {
+      "priceM5": 0.15,
+      "priceH1": 0.3,
+      "priceH6": 0.25,
+      "volumeAccel": 0.3
+    },
+    "liquidityHealth": {
+      "liqMcapRatio": 0.45,
+      "turnover": 0.25,
+      "liquidityAbs": 0.3
+    },
+    "risk": {
+      "rugcheck": 0.55,
+      "lpLocked": 0.2,
+      "mintAuthority": 0.15,
+      "freezeAuthority": 0.1
+    }
   },
   "thresholds": {
     "strong": 76,
     "watch": 60,
     "hardAvoidRugcheckNorm": 65
   },
-
+  "social": {
+    "_comment": "Social provider for the attention pillar. Rate-limited, so only the top `enrichTopN` tokens by composite get a lookup. Set LUNARCRUSH_API_KEY in .env to activate.",
+    "provider": "lunarcrush",
+    "enrichTopN": 10,
+    "requestsPerMinute": 8,
+    "cacheMinutes": 15,
+    "missCacheMinutes": 120,
+    "fetchCreators": true
+  },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",
     "enabled": true,
@@ -38,6 +76,6 @@
     "skipHardAvoid": true,
     "redTeamConvictionFloor": 0.6,
     "maxSpendPerScanUsd": 0.35,
-    "maxSpendPerDayUsd": 6.0
+    "maxSpendPerDayUsd": 6
   }
 }

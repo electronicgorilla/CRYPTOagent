@@ -15,9 +15,14 @@ import { DATA_DIR } from "./config.mjs";
 const LEDGER = join(DATA_DIR, "ledger.json");
 const MAX_ROWS = 20000;
 
-// Moves smaller than this count as "flat" - stops us crediting an agent for
-// calling a 0.4% drift correctly.
-export const FLAT_BAND_PCT = 5;
+// Moves smaller than this count as "flat". It MUST scale with the horizon and
+// with how violent the asset class is: the observed median 60-minute move on
+// this scanner's universe is ~18%, so a fixed +/-5% band made "flat" almost
+// never correct and quietly turned the hit rate into noise.
+const FLAT_BANDS = { 15: 8, 60: 18, 360: 35 };
+export function flatBandFor(horizonMinutes) {
+  return FLAT_BANDS[horizonMinutes] ?? 18;
+}
 
 export function load() {
   if (!existsSync(LEDGER)) return [];
