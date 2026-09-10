@@ -12,6 +12,10 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { DATA_DIR } from "./config.mjs";
 
+// Bump whenever the feature set or scoring changes shape. The scorecard can
+// then segment, instead of silently mixing calls made by two different models.
+export const MODEL_VERSION = "2026-09-11.fomo";
+
 const LEDGER = join(DATA_DIR, "ledger.json");
 const MAX_ROWS = 20000;
 
@@ -67,6 +71,9 @@ export function record({ agent, model, pred, feat, score, cost = 0, phase = null
     entry_mcap: feat.mcap,
     composite: score?.composite ?? null,
     mcap_tier: tierOf(feat.mcap),
+    model_version: MODEL_VERSION,
+    features: feat.n ? { ...feat.n } : null,
+    fomo: feat.fomo ? { score: feat.fomo.fomo, ...feat.fomo.components } : null,
     cost,
     outcome: null,
   };

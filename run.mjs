@@ -20,7 +20,7 @@ if (cmd === "serve") {
   const res = await runScan({ cfg: loadConfig() });
   console.log(
     `\n ${pad("SYM", 12)} ${rpad("COMP", 6)} ${rpad("ATT", 5)} ${rpad("MOM", 5)} ` +
-    `${rpad("LIQ", 5)} ${rpad("RISK", 5)}  ${pad("VERDICT", 8)} ${pad("PANEL", 8)} PHASE`
+    `${rpad("LIQ", 5)} ${rpad("FOMO", 5)} ${rpad("RISK", 5)}  ${pad("VERDICT", 8)} ${pad("PANEL", 8)} PHASE`
   );
   for (const r of res.tokens.slice(0, 25)) {
     const { score: s, feat: f, advice: a, panel } = r;
@@ -28,7 +28,7 @@ if (cmd === "serve") {
     console.log(
       ` ${pad(f.symbol || "?", 12)} ${rpad(s.composite.toFixed(1), 6)} ` +
       `${rpad(s.attention.toFixed(0), 5)} ${rpad(s.momentum.toFixed(0), 5)} ` +
-      `${rpad(s.liquidityHealth.toFixed(0), 5)} ${rpad(s.risk.toFixed(0), 5)}  ` +
+      `${rpad(s.liquidityHealth.toFixed(0), 5)} ${rpad(s.fomo == null ? "-" : s.fomo.toFixed(0), 5)} ${rpad(s.risk.toFixed(0), 5)}  ` +
       `${pad(s.verdict, 8)} ${pad(arb?.call ? `${arb.call}/${arb.conviction}` : "-", 8)} ${a.phase}`
     );
   }
@@ -36,6 +36,23 @@ if (cmd === "serve") {
 } else if (cmd === "loop") {
   const { loop } = await import("./src/pipeline.mjs");
   await loop(loadConfig());
+} else if (cmd === "adapt") {
+  const { propose } = await import("./src/adapt.mjs");
+  const cfg = loadConfig();
+  const a = propose(cfg, cfg.adapt || {});
+  console.log(`
+ samples ${a.n_samples} (need ${a.min_samples}) on model ${a.model_version}
+`);
+  console.log(` ${pad("FEATURE", 20)} ${rpad("n", 5)} ${rpad("IC", 7)}  VERDICT`);
+  for (const f of (a.ranked || []).slice(0, 20))
+    console.log(` ${pad(f.feature, 20)} ${rpad(f.n, 5)} ${rpad((f.ic > 0 ? "+" : "") + f.ic, 7)}  ${f.significant ? "signal" : "noise"}`);
+  if (a.proposed_weights) {
+    console.log(`
+ proposed pillar weights (shrinkage λ ${a.shrinkage_lambda}):`);
+    for (const [k, v] of Object.entries(a.proposed_weights))
+      console.log(`   ${pad(k, 18)} ${a.prior_weights[k]} -> ${v}`);
+    console.log("  nothing applied - set adapt.apply=true in config.json to use these");
+  } else console.log(" " + a.reason);
 } else if (cmd === "grade") {
   const { gradeDue } = await import("./src/grader.mjs");
   console.log(await gradeDue());
@@ -56,6 +73,6 @@ if (cmd === "serve") {
       console.log(`   ${pad(id, 16)} ${v.beats_baseline ? "BEATS" : "loses to"} baseline by ${(v.hit_rate_delta * 100).toFixed(1)}pp${v.proven ? "" : " (unproven)"}`);
   }
 } else {
-  console.log("usage: node run.mjs [serve|scan|loop|grade|scorecard]");
+  console.log("usage: node run.mjs [serve|scan|loop|grade|scorecard|adapt]");
   process.exit(1);
 }

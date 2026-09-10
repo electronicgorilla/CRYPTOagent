@@ -23,9 +23,10 @@
   },
   "weights": {
     "composite": {
-      "attention": 0.34,
-      "momentum": 0.34,
-      "liquidityHealth": 0.32
+      "attention": 0.24,
+      "momentum": 0.24,
+      "liquidityHealth": 0.22,
+      "fomo": 0.3
     },
     "riskCutMax": 0.6,
     "attention": {
@@ -53,8 +54,11 @@
     }
   },
   "thresholds": {
-    "strong": 76,
-    "watch": 60,
+    "_comment": "percentile mode self-calibrates: the top slice of each scan earns a directional call, so the ledger always gets falsifiable predictions to learn from. absoluteFloor stops it calling long on the best of a bad field.",
+    "mode": "percentile",
+    "strongPercentile": 0.85,
+    "watchPercentile": 0.55,
+    "absoluteFloor": 45,
     "hardAvoidRugcheckNorm": 65
   },
   "social": {
@@ -65,6 +69,13 @@
     "cacheMinutes": 15,
     "missCacheMinutes": 120,
     "fetchCreators": true
+  },
+  "adapt": {
+    "_comment": "Self-adaptation. `node run.mjs adapt` regresses graded outcomes against the feature vector and writes data/adapted_weights.json. Nothing is applied until apply=true.",
+    "apply": false,
+    "minSamples": 40,
+    "shrinkK": 250,
+    "maxShift": 0.5
   },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",

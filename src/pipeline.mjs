@@ -5,8 +5,10 @@ import { loadConfig } from "./config.mjs";
 import * as dex from "./dexscreener.mjs";
 import * as rugcheck from "./rugcheck.mjs";
 import * as social from "./social.mjs";
+import { buildCohort, buildFomo } from "./fomo.mjs";
+import * as adapt from "./adapt.mjs";
 import { buildFeatures } from "./features.mjs";
-import { scoreToken } from "./scoring.mjs";
+import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
 import * as orchestrator from "./agents/orchestrator.mjs";
 import { gradeDue } from "./grader.mjs";
@@ -77,6 +79,20 @@ export async function runScan({ cfg, verbose = true } = {}) {
   } else if (verbose) {
     console.log(`[social] ${social.status(cfg).reason} - attention from DEX proxies only`);
   }
+
+  // --- pass 3: FOMO. Needs the whole cohort, because saturation, share of
+  // attention and narrative crowding are only meaningful relative to the
+  // rest of the field - and the session regime gates all of them.
+  const cohort = buildCohort(rows.map((r) => r.feat));
+  const compositeWeights = adapt.effectiveComposite(cfg);
+  for (const r of rows) {
+    r.feat.fomo = buildFomo(r.feat, cohort, store.history(r.feat.mint));
+    r.score = scoreToken(r.feat, cfg, compositeWeights);
+    r.advice = generateAdvice(r.feat, r.score);
+  }
+  assignVerdicts(rows, cfg);
+  rows.sort((a, b) => b.score.composite - a.score.composite);
+  if (verbose) console.log(`[fomo] session ${cohort.regime} (breadth ${(cohort.breadth*100).toFixed(0)}% green)`);
   for (const r of rows) { delete r.pair; delete r.risk; }
 
   // Grade first: outcomes for past calls feed the scorecards the arbiter is

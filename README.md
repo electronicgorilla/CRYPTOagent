@@ -272,7 +272,55 @@ Point your own scripts / notebooks straight at these.
 
 ---
 
-## 7. Limitations (be honest with yourself)
+## 7. FOMO modelling (`src/fomo.mjs`)
+
+The scanner's other pillars measure *mechanics*. This one measures the thing that
+actually moves a memecoin: what makes a person feel they are missing something
+right now. Four ideas, each correcting a specific error in naive momentum:
+
+1. **Rate beats size.** +200% over six hours induces nothing; +200% in twenty
+   minutes induces panic buying. The derivative is the trigger.
+2. **The second chance is the strongest setup.** Peak buying pressure is not at
+   the top — it is when someone *watched* a coin run, missed it, saw it dip, and
+   now sees it turning back up. Regret plus a perceived discount.
+3. **Attention is an inverted U, not a line.** Unknown = no bid. Everyone knows =
+   already priced, and you are the exit liquidity. A model that treats more
+   attention as monotonically better buys tops by construction. Measured against
+   the *tier median* transaction count, on a log scale, peaking at ~3×.
+4. **FOMO is relative.** A coin running alone in a quiet session captures the
+   whole crowd; the same chart with five rivals splits it. Cohort share, session
+   breadth, and narrative crowding all gate the score.
+
+Plus Schelling points (round market caps) and distance from the highest price we
+have actually observed. Anything needing history we do not have returns `null`
+and renormalises — never a fabricated number.
+
+## 8. Percentile verdicts
+
+Absolute thresholds were why this system logged 77 predictions and **zero
+directional calls**: a fixed `STRONG >= 76` never fires once the distribution
+sits below the guess that set it, so the ledger fills with passes and the
+curation loop has nothing to learn from. **A system that never commits cannot be
+measured.** Verdicts are now percentile-based per scan, with `absoluteFloor` as
+the safety valve so the best of a bad field still does not earn a long.
+
+## 9. Adaptation (`src/adapt.mjs`)
+
+`node run.mjs adapt` regresses graded outcomes against the feature vector each
+call was made from — Spearman rank, not Pearson, because one 40× would otherwise
+set every weight. Three guards keep it honest:
+
+- **Significance gate:** |IC| must clear ±2/√n or it is reported as noise.
+- **Shrinkage:** proposals blend toward the hand-set prior by n/(n+K). Thin data
+  cannot move anything.
+- **Nothing auto-applies.** Proposals land in `data/adapted_weights.json`;
+  `adapt.apply` in config.json is a deliberate switch.
+
+Feature vectors and a `model_version` are stamped on every ledger row, so a
+scoring change can be segmented out instead of silently mixing two models.
+
+
+## 10. Limitations (be honest with yourself)
 
 - Discovery is boost/profile/search biased — it is **not** a true "everything
   trending" feed. Widen `config.scan.discovery.searchTerms` and raise

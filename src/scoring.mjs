@@ -13,7 +13,7 @@ function wsum(weights, values) {
   return tot > 0 ? s / tot : 0;
 }
 
-export function scoreToken(feat, cfg) {
+export function scoreToken(feat, cfg, compositeWeights = null) {
   const w = cfg.weights;
   const n = feat.n, nr = feat.nRisk;
 
@@ -37,10 +37,24 @@ export function scoreToken(feat, cfg) {
     mintAuthority: nr.mintAuthority, freezeAuthority: nr.freezeAuthority,
   });
 
-  const cw = w.composite;
-  const cwt = cw.attention + cw.momentum + cw.liquidityHealth || 1;
-  const baseScore =
-    (cw.attention * attention + cw.momentum * momentum + cw.liquidityHealth * liqHealth) / cwt;
+  // FOMO is a first-class pillar, not a decoration: in this market the crowd's
+  // emotional state IS the mechanism, and the mechanics only set how violently
+  // it expresses itself. A null (no cohort context yet) renormalises the
+  // remaining pillars rather than scoring a zero.
+  const fomo = feat.fomo ? feat.fomo.fomo : null;
+
+  const cw = compositeWeights || w.composite;
+  const pillars = [
+    ["attention", attention], ["momentum", momentum],
+    ["liquidityHealth", liqHealth], ["fomo", fomo],
+  ];
+  let acc = 0, cwt = 0;
+  for (const [k, v] of pillars) {
+    const weight = cw[k];
+    if (v == null || !weight) continue;
+    acc += weight * v; cwt += weight;
+  }
+  const baseScore = cwt ? acc / cwt : 0;
 
   let composite = baseScore * (1 - w.riskCutMax * risk);
   if (feat.kolExit) composite *= 0.6;
@@ -65,7 +79,44 @@ export function scoreToken(feat, cfg) {
     attention: round1(attention * 100),
     momentum: round1(momentum * 100),
     liquidityHealth: round1(liqHealth * 100),
+    fomo: fomo == null ? null : round1(fomo * 100),
     risk: round1(risk * 100),
     verdict, hardAvoid, components,
   };
+}
+
+
+/**
+ * Assign verdicts across a whole scan.
+ *
+ * Absolute thresholds were the reason this system logged 77 predictions and
+ * ZERO directional calls: a fixed "STRONG >= 76" never fires once the score
+ * distribution sits lower than the guess that set it, so the ledger fills with
+ * passes and the curation loop has nothing to learn from. A system that never
+ * commits cannot be measured, and cannot improve.
+ *
+ * Percentile thresholds self-calibrate: the top slice of each cohort gets a
+ * directional call regardless of where the distribution sits. `absoluteFloor`
+ * is the safety valve - in a genuinely bad field, the best of a bad lot still
+ * does not earn a long.
+ */
+export function assignVerdicts(rows, cfg) {
+  const th = cfg.thresholds;
+  if (th.mode !== "percentile") return rows;
+
+  const sorted = [...rows].sort((a, b) => a.score.composite - b.score.composite);
+  const n = sorted.length || 1;
+  const rank = new Map();
+  sorted.forEach((r, i) => rank.set(r, n === 1 ? 1 : i / (n - 1)));
+
+  for (const r of rows) {
+    const p = rank.get(r);
+    const c = r.score.composite;
+    r.score.percentile = Math.round(p * 100);
+    if (r.score.hardAvoid) { r.score.verdict = "AVOID"; continue; }
+    if (p >= th.strongPercentile && c >= th.absoluteFloor) r.score.verdict = "STRONG";
+    else if (p >= th.watchPercentile && c >= th.absoluteFloor * 0.75) r.score.verdict = "WATCH";
+    else r.score.verdict = "NEUTRAL";
+  }
+  return rows;
 }

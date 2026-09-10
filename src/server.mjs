@@ -8,6 +8,7 @@ import * as orchestrator from "./agents/orchestrator.mjs";
 import * as scorecard from "./scorecard.mjs";
 import * as ledger from "./ledger.mjs";
 import { gradeDue } from "./grader.mjs";
+import * as adapt from "./adapt.mjs";
 import { runScan } from "./pipeline.mjs";
 
 loadEnv();
@@ -60,6 +61,10 @@ const server = createServer(async (req, res) => {
 
     // --- curation loop ---
     if (p === "/api/scorecard") return send(res, 200, scorecard.build());
+    if (p === "/api/adapt") {
+      const cfg = loadConfig();
+      return send(res, 200, adapt.propose(cfg, cfg.adapt || {}));
+    }
     if (p === "/api/ledger/open") return send(res, 200, ledger.open());
     if (p.startsWith("/api/panel/")) return send(res, 200, ledger.latestByToken(decodeURIComponent(p.slice(11))));
     if (p === "/api/grade" && req.method === "POST") return send(res, 200, await gradeDue({ verbose: false }));

@@ -3,97 +3,156 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>degen-radar</title>
+<title>CRYPTOagent · radar</title>
 <style>
+  /* Palette: validated dark steps (CVD ΔE ≥ 8.4, normal-vision ≥ 19.8,
+     all ≥ 3:1 on the #1a1a19 surface). Status colours are reserved and never
+     reused as series colours. */
   :root{
-    --bg:#0b0e14; --panel:#141a24; --panel2:#1b232f; --line:#26303d;
-    --fg:#e6edf3; --dim:#8b98a5; --accent:#4da3ff;
-    --good:#3fb950; --warn:#d29922; --bad:#f85149; --neutral:#6e7681;
+    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#212120;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --hairline:rgba(255,255,255,.10);
+
+    --s1:#3987e5;  /* blue   - attention */
+    --s2:#d95926;  /* orange - momentum  */
+    --s3:#199e70;  /* aqua   - liquidity */
+    --s4:#c98500;  /* yellow - fomo      */
+
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    --r:10px;
   }
   *{box-sizing:border-box}
-  /* .wrap sets display:grid, which would otherwise beat the UA [hidden] rule */
   [hidden]{display:none!important}
-  body{margin:0;background:var(--bg);color:var(--fg);
-    font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-  header{display:flex;align-items:center;gap:16px;padding:12px 18px;
-    border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
-  header h1{font-size:15px;margin:0;letter-spacing:.5px}
-  header .meta{color:var(--dim);font-size:12px}
-  button{background:var(--accent);color:#04121f;border:0;border-radius:6px;
-    padding:7px 14px;font-weight:600;cursor:pointer}
-  button.secondary{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
-  button:disabled{opacity:.5;cursor:default}
-  .wrap{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;padding:14px}
-  @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
-    margin:0;padding:10px 14px;border-bottom:1px solid var(--line)}
-  table{width:100%;border-collapse:collapse}
-  th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-  th:first-child,td:first-child{text-align:left}
-  tbody tr{cursor:pointer}
-  tbody tr:hover{background:var(--panel2)}
-  tbody tr.sel{background:#1d2b3a}
-  .sym{font-weight:700}
-  .sub{color:var(--dim);font-size:11px}
-  .pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700}
-  .STRONG{background:rgba(63,185,80,.15);color:var(--good)}
-  .WATCH{background:rgba(210,153,34,.15);color:var(--warn)}
-  .NEUTRAL{background:rgba(110,118,129,.18);color:var(--dim)}
-  .AVOID{background:rgba(248,81,73,.15);color:var(--bad)}
-  .bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;min-width:54px;display:inline-block;vertical-align:middle}
-  .bar > i{display:block;height:100%}
-  .detail{padding:14px}
-  .detail .big{font-size:20px;font-weight:700}
-  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0}
-  .kv div:nth-child(odd){color:var(--dim)}
+  html,body{background:var(--plane);color:var(--ink)}
+  body{margin:0;font:13px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:18px;padding:11px 20px;
+    background:var(--surface);border-bottom:1px solid var(--hairline);
+    position:sticky;top:0;z-index:20}
+  .brand{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+  .brand span{color:var(--muted);font-weight:500}
+  .tabs{display:flex;gap:2px;background:var(--plane);padding:3px;border-radius:8px}
+  .tab{background:none;border:0;color:var(--muted);font:inherit;font-weight:600;
+    padding:5px 13px;border-radius:6px;cursor:pointer;transition:.12s}
+  .tab:hover{color:var(--ink-2)}
+  .tab.on{background:var(--surface-2);color:var(--ink)}
+  button.act{background:var(--s1);color:#04121f;border:0;border-radius:7px;
+    padding:7px 15px;font:inherit;font-weight:650;cursor:pointer}
+  button.act:disabled{opacity:.45;cursor:default}
+  button.ghost{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--hairline);
+    border-radius:7px;padding:6px 12px;font:inherit;cursor:pointer}
+  .meta{color:var(--muted);font-size:12px}
+  .regime{display:flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;
+    background:var(--plane);border:1px solid var(--hairline);font-size:11.5px;font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .spacer{margin-left:auto}
+
+  /* ---------- layout ---------- */
+  .wrap{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(380px,1fr);
+    gap:14px;padding:14px;align-items:start}
+  @media(max-width:1080px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r);overflow:hidden}
+  .card > h2{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+    margin:0;padding:12px 16px;border-bottom:1px solid var(--hairline);font-weight:650;
+    display:flex;align-items:center;gap:8px}
+  .card > h2 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500}
+
+  /* ---------- leaderboard ---------- */
+  .row{display:grid;grid-template-columns:118px 58px 1fr 74px 70px;gap:12px;
+    align-items:center;padding:11px 16px;border-bottom:1px solid var(--grid);
+    cursor:pointer;transition:background .1s}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:var(--surface-2)}
+  .row.sel{background:#1c2836;box-shadow:inset 2px 0 0 var(--s1)}
+  .tick{font-weight:700;font-size:13.5px;letter-spacing:-.01em}
+  .tname{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:112px}
+  .comp{font-size:21px;font-weight:300;line-height:1;letter-spacing:-.02em}
+  .verd{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-top:3px}
+  .STRONG{color:var(--good)} .WATCH{color:var(--warn)}
+  .NEUTRAL{color:var(--muted)} .AVOID{color:var(--critical)}
+  /* thin marks, 4px rounded data-ends anchored to a shared baseline */
+  .bars{display:grid;gap:4px}
+  .bl{display:grid;grid-template-columns:26px 1fr 26px;gap:7px;align-items:center}
+  .bl b{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .track{height:4px;background:var(--grid);border-radius:2px;overflow:hidden}
+  .track i{display:block;height:100%;border-radius:0 4px 4px 0}
+  .bl u{font-size:10px;color:var(--ink-2);text-decoration:none;text-align:right}
+  .chg{text-align:right;font-size:12.5px;font-weight:600}
+  .up{color:var(--good)} .down{color:var(--critical)} .flat{color:var(--muted)}
+  .sub{color:var(--muted);font-size:11px}
+
+  /* ---------- detail ---------- */
+  .detail{padding:16px}
+  .hero{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+  .hero .big{font-size:40px;font-weight:250;line-height:.95;letter-spacing:-.03em}
+  .hero .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:5px}
+  .grp{margin:18px 0}
+  .grp h3{font-size:10px;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);
+    margin:0 0 9px;font-weight:650}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:12px}
+  .kv div:nth-child(odd){color:var(--muted)}
   .kv div:nth-child(even){text-align:right}
-  .grp{margin:14px 0}
-  .grp h3{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:0 0 6px}
-  ul{margin:0;padding-left:16px}
-  li{margin:3px 0}
-  .risk li{color:#ffb3ae}
-  .muted{color:var(--dim)}
-  textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);
-    border-radius:6px;padding:8px;font:inherit;resize:vertical;min-height:54px}
-  .spark{display:block}
-  a{color:var(--accent)}
-  .empty{padding:40px 14px;text-align:center;color:var(--dim)}
-  .llm{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px}
-  .tab{background:none;border:0;color:var(--dim);font-weight:600;padding:6px 10px;border-radius:6px}
-  .tab.on{background:var(--panel2);color:var(--fg)}
-  .agent{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:7px}
-  .agent .top{display:flex;align-items:baseline;gap:8px}
-  .agent .who{font-weight:700;font-size:12px}
-  .agent .rest{margin-left:auto;color:var(--dim);font-size:11px}
-  .call{padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700}
-  .long{background:rgba(63,185,80,.15);color:var(--good)}
-  .avoid{background:rgba(248,81,73,.15);color:var(--bad)}
-  .pass{background:rgba(110,118,129,.18);color:var(--dim)}
-  .conv{display:inline-block;height:5px;border-radius:3px;background:var(--accent);vertical-align:middle}
-  .split{border-left:3px solid var(--warn);padding-left:8px}
-  .arb{border:1px solid var(--accent);background:rgba(77,163,255,.07)}
-  .cal{display:flex;gap:3px;align-items:flex-end;height:26px}
-  .cal i{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}
-  .cal .miss{background:var(--line)}
-  .beats{color:var(--good);font-weight:700}
-  .loses{color:var(--bad);font-weight:700}
+  ul{margin:0;padding-left:15px} li{margin:4px 0;font-size:12px}
+  .risk li{color:#f5b7b3}
+  .why{background:var(--surface-2);border-left:2px solid var(--s4);border-radius:0 6px 6px 0;
+    padding:8px 11px;margin:7px 0;font-size:12px;color:var(--ink-2)}
+  .empty{padding:52px 16px;text-align:center;color:var(--muted)}
+  a{color:var(--s1);text-decoration:none} a:hover{text-decoration:underline}
+  textarea{width:100%;background:var(--plane);border:1px solid var(--hairline);color:var(--ink);
+    border-radius:7px;padding:9px;font:inherit;resize:vertical;min-height:56px}
+
+  /* ---------- agent panel ---------- */
+  .agent{background:var(--surface-2);border:1px solid var(--hairline);border-radius:8px;
+    padding:10px 12px;margin-bottom:7px}
+  .agent .top{display:flex;align-items:baseline;gap:9px;margin-bottom:5px}
+  .who{font-weight:700;font-size:11.5px}
+  .call{padding:1px 8px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase}
+  .long{background:rgba(12,163,12,.16);color:var(--good)}
+  .avoid{background:rgba(208,59,59,.16);color:var(--critical)}
+  .pass{background:rgba(137,135,129,.18);color:var(--muted)}
+  .arb{border-color:rgba(57,135,229,.45);background:rgba(57,135,229,.07)}
+  .split{border-left:2px solid var(--warn);padding-left:9px}
+
+  /* ---------- tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:right;padding:8px 11px;border-bottom:1px solid var(--hairline);
+    color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:650}
+  td{text-align:right;padding:8px 11px;border-bottom:1px solid var(--grid)}
+  th:first-child,td:first-child{text-align:left}
+  .note{padding:11px 16px;color:var(--muted);font-size:11.5px;line-height:1.6}
+  .beats{color:var(--good);font-weight:700} .loses{color:var(--critical);font-weight:700}
+  .scroll{overflow-x:auto}
+
+  /* ---------- tooltip ---------- */
+  #tip{position:fixed;pointer-events:none;z-index:99;background:var(--surface-2);
+    border:1px solid var(--hairline);border-radius:7px;padding:7px 10px;font-size:11.5px;
+    box-shadow:0 8px 24px rgba(0,0,0,.55);opacity:0;transition:opacity .1s}
 </style>
 </head>
 <body>
+<div id="tip"></div>
+
 <header>
-  <h1>degen&#8203;-radar</h1>
-  <button class="tab on" id="tabRadar">Radar</button>
-  <button class="tab" id="tabScore">Scorecard</button>
-  <button id="scan">Run scan</button>
-  <span class="meta" id="status">loading&hellip;</span>
-  <label class="meta" style="margin-left:auto"><input type="checkbox" id="auto"> auto-refresh 60s</label>
+  <div class="brand">CRYPTO<span>agent</span></div>
+  <div class="tabs">
+    <button class="tab on" id="tabRadar">Radar</button>
+    <button class="tab" id="tabScore">Scorecard</button>
+    <button class="tab" id="tabAdapt">Adaptation</button>
+  </div>
+  <button class="act" id="scan">Run scan</button>
+  <div class="regime" id="regime" hidden><span class="dot"></span><span class="t"></span></div>
+  <span class="meta" id="status">loading…</span>
+  <label class="meta spacer"><input type="checkbox" id="auto"> auto 60s</label>
 </header>
 
 <div class="wrap" id="radarView">
   <div class="card">
-    <h2>Trending &mdash; composite score</h2>
-    <div id="tableWrap"><div class="empty">No scan yet. Hit &ldquo;Run scan&rdquo; (first scan ~30&ndash;90s).</div></div>
+    <h2>Trending <span class="r" id="scanMeta"></span></h2>
+    <div id="list"><div class="empty">No scan yet — hit “Run scan”.</div></div>
   </div>
   <div class="card">
     <h2>Read</h2>
@@ -103,284 +162,358 @@
 
 <div id="scoreView" hidden style="padding:14px;display:grid;gap:14px">
   <div class="card">
-    <h2>Agent scorecards &mdash; measured, not claimed</h2>
-    <div id="scoreWrap"><div class="empty">loading&hellip;</div></div>
+    <h2>Agent scorecards <span class="r">measured, not claimed</span></h2>
+    <div id="scoreWrap"><div class="empty">loading…</div></div>
   </div>
   <div class="card">
     <h2>Open predictions</h2>
-    <div id="openWrap"><div class="empty">loading&hellip;</div></div>
+    <div id="openWrap"><div class="empty">loading…</div></div>
+  </div>
+</div>
+
+<div id="adaptView" hidden style="padding:14px;display:grid;gap:14px">
+  <div class="card">
+    <h2>Feature information coefficients <span class="r">what actually predicts</span></h2>
+    <div id="adaptWrap"><div class="empty">loading…</div></div>
   </div>
 </div>
 
 <script>
 const $ = s => document.querySelector(s);
-let STATE = { tokens: [], ts: null }, SELECTED = null;
+let STATE={tokens:[],ts:null}, SEL=null;
 
-const fmtUsd = n => n>=1e6 ? '$'+(n/1e6).toFixed(2)+'M'
-  : n>=1e3 ? '$'+(n/1e3).toFixed(1)+'k'
-  : '$'+(+n).toFixed(n<1?6:2);
-const pct = n => (n>=0?'+':'')+(+n).toFixed(1)+'%';
-const clr = n => n>0?'var(--good)':n<0?'var(--bad)':'var(--dim)';
-const esc = s => String(s??'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtUsd = n => !n||!isFinite(n) ? '—'
+  : n>=1e9?'$'+(n/1e9).toFixed(2)+'B' : n>=1e6?'$'+(n/1e6).toFixed(2)+'M'
+  : n>=1e3?'$'+(n/1e3).toFixed(1)+'k' : '$'+(+n).toFixed(n<0.01?7:2);
+const pct = n => (n>=0?'+':'')+(+n||0).toFixed(1)+'%';
+const cls = n => n>0.5?'up':n<-0.5?'down':'flat';
 
-const bar = (v, color) =>
-  `<div class="bar"><i style="width:${Math.max(2,Math.min(100,v))}%;background:${color}"></i></div>`;
-const scoreColor = v => v>=76?'var(--good)':v>=60?'var(--warn)':'var(--neutral)';
+// --- tooltip (hover layer is default, not optional) ---
+const tip=$('#tip');
+function showTip(e,html){ tip.innerHTML=html; tip.style.opacity='1';
+  const r=12; let x=e.clientX+r, y=e.clientY+r;
+  const b=tip.getBoundingClientRect();
+  if(x+b.width>innerWidth-8) x=e.clientX-b.width-r;
+  if(y+b.height>innerHeight-8) y=e.clientY-b.height-r;
+  tip.style.left=x+'px'; tip.style.top=y+'px'; }
+const hideTip=()=>tip.style.opacity='0';
+document.addEventListener('mouseover',e=>{
+  const t=e.target.closest('[data-tip]'); if(t) showTip(e,t.dataset.tip); });
+document.addEventListener('mousemove',e=>{
+  const t=e.target.closest('[data-tip]'); if(t) showTip(e,t.dataset.tip); else hideTip(); });
 
-function sparkline(vals, w=260, h=44){
-  vals = (vals||[]).filter(v => typeof v === 'number');
-  if(vals.length<2) return '<span class="muted">no history yet &mdash; run a few scans</span>';
+// --- marks ---
+function bar(label,val,color,tipText){
+  const v=val==null?0:Math.max(0,Math.min(100,val));
+  return `<div class="bl" data-tip="${esc(tipText||label+': '+(val==null?'n/a':v.toFixed(0)))}">
+    <b>${label}</b><div class="track"><i style="width:${val==null?0:Math.max(1.5,v)}%;background:${color}"></i></div>
+    <u class="num">${val==null?'—':v.toFixed(0)}</u></div>`;
+}
+
+function sparkline(vals,w=300,h=48){
+  if(!vals||vals.length<2) return '<div class="sub">no history yet — needs two scans</div>';
   const mn=Math.min(...vals), mx=Math.max(...vals), rng=(mx-mn)||1;
-  const pts=vals.map((v,i)=>{
-    const x=(i/(vals.length-1))*w, y=h-((v-mn)/rng)*h;
-    return x.toFixed(1)+','+y.toFixed(1);
-  }).join(' ');
-  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-    <polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${pts}"/></svg>`;
+  const pts=vals.map((v,i)=>[(i/(vals.length-1))*w, h-((v-mn)/rng)*(h-6)-3]);
+  const d=pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area=`0,${h} `+d+` ${w},${h}`;
+  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"
+     data-tip="score history · ${vals.length} scans · low ${mn.toFixed(0)} high ${mx.toFixed(0)}">
+    <polygon points="${area}" fill="var(--s1)" opacity=".10"/>
+    <polyline points="${d}" fill="none" stroke="var(--s1)" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${pts.at(-1)[0].toFixed(1)}" cy="${pts.at(-1)[1].toFixed(1)}" r="3"
+      fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/></svg>`;
 }
-const list = arr => (arr&&arr.length)
-  ? '<ul>'+arr.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>'
-  : '<p class="muted">none</p>';
 
+// FOMO dial — the one distinctive mark on the page, so the crowd-state reads
+// at a glance rather than as another number in a column.
+function dial(v,size=104){
+  const p=Math.max(0,Math.min(1,v??0)), R=size/2-9, C=size/2;
+  const a0=Math.PI*0.75, a1=Math.PI*2.25, a=a0+(a1-a0)*p;
+  const arc=(from,to)=>{
+    const x0=C+R*Math.cos(from), y0=C+R*Math.sin(from);
+    const x1=C+R*Math.cos(to),   y1=C+R*Math.sin(to);
+    return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${R} ${R} 0 ${to-from>Math.PI?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  };
+  const col = p>=.66?'var(--s4)' : p>=.4?'var(--s2)' : 'var(--muted)';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <path d="${arc(a0,a1)}" stroke="var(--grid)" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="${arc(a0,a)}" stroke="${col}" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <text x="${C}" y="${C+3}" text-anchor="middle" fill="var(--ink)"
+      font-size="23" font-weight="300" font-family="system-ui">${Math.round(p*100)}</text>
+    <text x="${C}" y="${C+19}" text-anchor="middle" fill="var(--muted)"
+      font-size="8.5" letter-spacing="1.4" font-family="system-ui">FOMO</text></svg>`;
+}
+
+// --- status ---
 async function loadStatus(){
-  const s = await fetch('/api/status').then(r=>r.json()).catch(()=>({}));
-  const spend = s.spendToday != null
-    ? ` &middot; $${s.spendToday.toFixed(3)}/$${s.spendCapDay ?? '?'} today` : '';
-  $('#status').innerHTML = (s.running?'scanning&hellip; ':'')
-    + (STATE.ts ? 'last scan '+new Date(STATE.ts*1000).toLocaleTimeString() : 'idle')
-    + (s.agentsEnabled?' &middot; panel on'+spend
-       : s.agentsConfigured?' &middot; panel disabled in config':' &middot; rule-based (no API key)')
-    + (s.lastGraded?.graded ? ` &middot; graded ${s.lastGraded.graded}` : '')
-    + (s.lastError?' &middot; <span style="color:var(--bad)">'+esc(s.lastError)+'</span>':'');
-  $('#scan').disabled = !!s.running;
-  if(s.running) setTimeout(()=>{ loadStatus(); loadTokens(); }, 3000);
-}
-
-function agentCard(id, a, extraClass=''){
-  if(!a) return '';
-  if(a.error)   return `<div class="agent ${extraClass}"><b class="who">${esc(id)}</b> <span class="muted">error: ${esc(a.error)}</span></div>`;
-  if(a.skipped) return `<div class="agent ${extraClass}"><b class="who">${esc(id)}</b> <span class="muted">skipped &mdash; ${esc(a.skipped)}</span></div>`;
-  const conv = Math.round((a.conviction||0)*100);
-  const extra = [];
-  if(a.flow_quality) extra.push('flow: '+a.flow_quality);
-  if(a.narrative_strength) extra.push('narrative: '+a.narrative_strength);
-  if(a.attention_is_organic) extra.push('organic: '+a.attention_is_organic);
-  if(a.meta_fit) extra.push('meta: '+a.meta_fit);
-  if(a.rug_probability!=null) extra.push('rug p: '+a.rug_probability);
-  if(a.panel_agreement) extra.push('panel: '+a.panel_agreement);
-  return `<div class="agent ${extraClass}">
-    <div class="top">
-      <span class="who">${esc(id)}</span>
-      <span class="call ${esc(a.call)}">${esc(a.call)}</span>
-      <span class="sub">${esc(a.predicted_direction)} / ${a.horizon_minutes}m</span>
-      <span class="rest">conviction ${conv}%
-        <span class="conv" style="width:${Math.max(4,conv*0.5)}px"></span></span>
-    </div>
-    ${a.one_liner? `<p style="margin:6px 0 4px"><b>${esc(a.one_liner)}</b></p>`:''}
-    <p style="margin:5px 0">${esc(a.reasoning)}</p>
-    ${a.bear_case? `<p style="margin:5px 0;color:#ffb3ae"><b>Bear:</b> ${esc(a.bear_case)}</p>`:''}
-    ${a.panel_blindspot? `<p style="margin:5px 0;color:var(--warn)"><b>Blindspot:</b> ${esc(a.panel_blindspot)}</p>`:''}
-    ${a.position_framing? `<p style="margin:5px 0"><b>Framing:</b> ${esc(a.position_framing)}</p>`:''}
-    ${a.exit_trigger? `<p style="margin:5px 0"><b>Exit:</b> ${esc(a.exit_trigger)}</p>`:''}
-    ${a.key_risk? `<p class="sub" style="margin:4px 0">risk: ${esc(a.key_risk)}</p>`:''}
-    ${a.blocking_flags?.length? `<p class="sub" style="margin:4px 0">flags: ${esc(a.blocking_flags.join(', '))}</p>`:''}
-    <p class="sub" style="margin:4px 0">${esc(extra.join(' &middot; '))}
-      ${a.invalidation_pct!=null? ` &middot; invalidates at ${a.invalidation_pct>0?'+':''}${a.invalidation_pct}%`:''}</p>
-  </div>`;
-}
-
-function panelHtml(panel){
-  if(!panel) return `<div class="grp"><h3>Agent panel</h3>
-    <p class="muted">Not promoted this scan &mdash; the composite didn't clear the gate, or the
-    feature vector hadn't moved enough since the last read to be worth re-asking.</p></div>`;
-  const ag = panel.agents || {};
-  const order = ['arbiter','redteam','microstructure','narrative','forensics'];
-  const calls = order.filter(k=>ag[k]?.call).map(k=>ag[k].call);
-  const split = new Set(calls).size > 1;
-  return `<div class="grp"><h3>Agent panel
-      <span class="sub">&mdash; promoted: ${esc(panel.promotedBecause)} &middot; cost $${(panel.cost||0).toFixed(4)}</span></h3>
-    ${split? '<p class="sub" style="color:var(--warn)">Panel is SPLIT &mdash; disagreement is information, read the red team.</p>':''}
-    <div class="${split?'split':''}">
-      ${order.map(k=>agentCard(k, ag[k], k==='arbiter'?'arb':'')).join('')}
-    </div></div>`;
+  const s=await fetch('/api/status').then(r=>r.json()).catch(()=>({}));
+  const spend=s.spendToday!=null&&s.agentsEnabled ? ` · $${s.spendToday.toFixed(3)}/$${s.spendCapDay}` : '';
+  $('#status').innerHTML=(s.running?'scanning… ':'')
+    +(STATE.ts?'scan '+new Date(STATE.ts*1000).toLocaleTimeString():'idle')
+    +(s.agentsEnabled?' · panel on'+spend:' · rule-based')
+    +(s.lastGraded?.graded?` · graded ${s.lastGraded.graded}`:'')
+    +(s.lastError?` · <span style="color:var(--critical)">${esc(s.lastError)}</span>`:'');
+  $('#scan').disabled=!!s.running;
+  if(s.running) setTimeout(()=>{loadStatus();loadTokens();},3000);
 }
 
 async function loadTokens(){
-  STATE = await fetch('/api/tokens').then(r=>r.json()).catch(()=>STATE);
-  renderTable();
-  if(SELECTED){
-    const t = STATE.tokens.find(x=>x.feat.mint===SELECTED);
-    if(t) renderDetail(t);
-  }
+  const d=await fetch('/api/tokens').then(r=>r.json()).catch(()=>null);
+  if(!d) return;
+  STATE=d; renderList();
+  const t=d.tokens.find(x=>x.feat.mint===SEL);
+  if(t) renderDetail(t);
   loadStatus();
 }
 
-function renderTable(){
-  if(!STATE.tokens.length) return;
-  const rows = STATE.tokens.map(t=>{
-    const s=t.score, f=t.feat;
-    return `<tr class="${f.mint===SELECTED?'sel':''}" data-mint="${esc(f.mint)}">
-      <td><span class="sym">${esc(f.symbol||'?')}</span><br>
-          <span class="sub">${esc((f.name||'').slice(0,22))}</span></td>
-      <td><b style="color:${scoreColor(s.composite)}">${s.composite.toFixed(0)}</b><br>
-          <span class="pill ${s.verdict}">${s.verdict}</span></td>
-      <td>${bar(s.attention,'var(--accent)')} <span class="sub">${s.attention.toFixed(0)}</span></td>
-      <td>${bar(s.momentum,'var(--good)')} <span class="sub">${s.momentum.toFixed(0)}</span></td>
-      <td>${bar(s.liquidityHealth,'#7ee787')} <span class="sub">${s.liquidityHealth.toFixed(0)}</span></td>
-      <td>${bar(s.risk,'var(--bad)')} <span class="sub">${s.risk.toFixed(0)}</span></td>
-      <td style="color:${clr(f.priceChange.h1)}">${pct(f.priceChange.h1)}</td>
-      <td>${fmtUsd(f.liqUsd)}</td>
-      <td>${fmtUsd(f.mcap)}</td>
-      <td class="sub">${f.ageH<1? Math.round(f.ageH*60)+'m' : f.ageH.toFixed(0)+'h'}</td>
-    </tr>`;
-  }).join('');
-  $('#tableWrap').innerHTML = `<table><thead><tr>
-      <th>Token</th><th>Score</th><th>Att</th><th>Mom</th><th>Liq</th><th>Risk</th>
-      <th>1h</th><th>Liq&nbsp;$</th><th>MCap</th><th>Age</th>
-    </tr></thead><tbody>${rows}</tbody></table>`;
-  $('#tableWrap').querySelectorAll('tr[data-mint]').forEach(tr=>{
-    tr.onclick = ()=>{ SELECTED = tr.dataset.mint; renderTable();
-      const t = STATE.tokens.find(x=>x.feat.mint===SELECTED); if(t) renderDetail(t); };
+function renderList(){
+  const ts=STATE.tokens;
+  if(!ts.length) return;
+  const f0=ts[0].feat.fomo;
+  if(f0){
+    const col={'risk-on':'var(--good)','mixed':'var(--warn)','risk-off':'var(--critical)'}[f0.regime];
+    $('#regime').hidden=false;
+    $('#regime').querySelector('.dot').style.background=col;
+    $('#regime').querySelector('.t').textContent=`${f0.regime} · ${Math.round(f0.breadth*100)}% green`;
+    $('#regime').dataset.tip='Session regime from cohort breadth. Risk-off mutes every FOMO signal — the crowd is not there to buy.';
+  }
+  $('#scanMeta').textContent=`${ts.length} tokens`;
+  $('#list').innerHTML=ts.map(t=>{
+    const s=t.score,f=t.feat,fo=f.fomo;
+    return `<div class="row ${f.mint===SEL?'sel':''}" data-mint="${esc(f.mint)}">
+      <div><div class="tick">${esc(f.symbol||'?')}</div><div class="tname">${esc(f.name||'')}</div></div>
+      <div><div class="comp num">${s.composite.toFixed(0)}</div><div class="verd ${s.verdict}">${s.verdict}</div></div>
+      <div class="bars">
+        ${bar('att',s.attention,'var(--s1)','Attention — boost, socials, tx velocity')}
+        ${bar('mom',s.momentum,'var(--s2)','Momentum — price and volume acceleration')}
+        ${bar('liq',s.liquidityHealth,'var(--s3)','Liquidity health — depth, liq/mcap, turnover')}
+        ${bar('fomo',s.fomo,'var(--s4)','FOMO — crowd-psychology composite')}
+      </div>
+      <div>${fo?dial(fo.fomo,58):''}</div>
+      <div><div class="chg num ${cls(f.priceChange.h1)}">${pct(f.priceChange.h1)}</div>
+        <div class="sub num">${fmtUsd(f.mcap)}</div></div>
+    </div>`;}).join('');
+  $('#list').querySelectorAll('[data-mint]').forEach(el=>el.onclick=()=>{
+    SEL=el.dataset.mint; renderList();
+    const t=STATE.tokens.find(x=>x.feat.mint===SEL); if(t) renderDetail(t);
   });
 }
 
+const list = a => a?.length ? '<ul>'+a.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>' : '<p class="sub">none</p>';
+
+function agentCard(id,a,extra=''){
+  if(!a) return '';
+  if(a.error) return `<div class="agent ${extra}"><span class="who">${esc(id)}</span> <span class="sub">error: ${esc(a.error)}</span></div>`;
+  if(a.skipped) return `<div class="agent ${extra}"><span class="who">${esc(id)}</span> <span class="sub">skipped — ${esc(a.skipped)}</span></div>`;
+  return `<div class="agent ${extra}"><div class="top">
+      <span class="who">${esc(id)}</span><span class="call ${esc(a.call)}">${esc(a.call)}</span>
+      <span class="sub">${esc(a.predicted_direction)} · ${a.horizon_minutes}m · conviction ${Math.round((a.conviction||0)*100)}%</span></div>
+    ${a.one_liner?`<p style="margin:5px 0"><b>${esc(a.one_liner)}</b></p>`:''}
+    <p style="margin:5px 0;color:var(--ink-2)">${esc(a.reasoning)}</p>
+    ${a.bear_case?`<p style="margin:5px 0;color:#f5b7b3"><b>Bear:</b> ${esc(a.bear_case)}</p>`:''}
+    ${a.panel_blindspot?`<p style="margin:5px 0;color:var(--warn)"><b>Blindspot:</b> ${esc(a.panel_blindspot)}</p>`:''}
+    ${a.exit_trigger?`<p style="margin:5px 0"><b>Exit:</b> ${esc(a.exit_trigger)}</p>`:''}
+    ${a.key_risk?`<p class="sub" style="margin:4px 0">risk: ${esc(a.key_risk)}</p>`:''}</div>`;
+}
+
+function panelHtml(p){
+  if(!p) return `<div class="grp"><h3>Agent panel</h3><p class="sub">Not promoted this scan —
+    either the composite didn't clear the gate, or the feature vector hadn't moved
+    enough since the last read to be worth re-asking.</p></div>`;
+  const ag=p.agents||{}, order=['arbiter','redteam','microstructure','narrative','forensics'];
+  const calls=order.filter(k=>ag[k]?.call).map(k=>ag[k].call);
+  const split=new Set(calls).size>1;
+  return `<div class="grp"><h3>Agent panel · ${esc(p.promotedBecause)} · $${(p.cost||0).toFixed(4)}</h3>
+    ${split?'<p class="sub" style="color:var(--warn)">Panel is SPLIT — disagreement is the signal; read the red team.</p>':''}
+    <div class="${split?'split':''}">${order.map(k=>agentCard(k,ag[k],k==='arbiter'?'arb':'')).join('')}</div></div>`;
+}
+
+const FOMO_LABELS={
+  gainVelocity:['Gain velocity','How fast the visible gain is accruing right now. Rate is the trigger, not size.'],
+  secondChance:['Second chance','Ran, cooled, turning back up — the regret-plus-discount setup where retail buys hardest.'],
+  attentionSweet:['Attention sweet spot','Inverted U vs the tier median. Unknown = no bid; saturated = already priced.'],
+  attentionShare:['Share of crowd','This token\'s slice of cohort volume. FOMO is relative, not absolute.'],
+  athProximity:['Near its high','Distance from the highest price we have observed. Null until 3 scans exist.'],
+  milestone:['Milestone','Approaching a round market cap — a Schelling point where attention clusters.'],
+  narrativeRoom:['Narrative room','How uncrowded the meme family is. The seventh cat coin has less headroom.'],
+};
+
 async function renderDetail(t){
-  const { feat:f, score:s, advice:a, panel } = t;
-  const hist = await fetch('/api/history/'+encodeURIComponent(f.mint)).then(r=>r.json()).catch(()=>[]);
-  const llmHtml = panelHtml(panel);
+  const {feat:f,score:s,advice:a,panel}=t, fo=f.fomo;
+  const hist=await fetch('/api/history/'+encodeURIComponent(f.mint)).then(r=>r.json()).catch(()=>[]);
 
-  $('#detail').innerHTML = `<div class="detail">
-    <div class="big">${esc(f.symbol||'?')} <span class="pill ${s.verdict}">${s.verdict}</span></div>
-    <div class="sub">${esc(f.name||'')} &middot; ${esc(f.dex||'')} &middot;
-      <a href="${esc(f.url)}" target="_blank" rel="noopener">DEX Screener &#8599;</a></div>
+  const comp = fo ? Object.entries(fo.components).map(([k,v])=>{
+    const [lbl,tp]=FOMO_LABELS[k]||[k,''];
+    return `<div class="bl" data-tip="${esc(lbl+' — '+tp)}" style="grid-template-columns:112px 1fr 30px">
+      <b style="text-transform:none;font-size:10.5px;color:var(--ink-2)">${lbl}</b>
+      <div class="track"><i style="width:${v==null?0:Math.max(1.5,v*100)}%;background:${v==null?'var(--grid)':'var(--s4)'}"></i></div>
+      <u class="num">${v==null?'—':Math.round(v*100)}</u></div>`;}).join('') : '';
 
-    <div class="grp"><h3>Composite ${s.composite.toFixed(1)} &middot; score history</h3>
-      ${sparkline(hist.map(h=>h.composite))}</div>
+  $('#detail').innerHTML=`<div class="detail">
+    <div class="hero">
+      <div><div class="big num">${s.composite.toFixed(0)}</div>
+        <div class="lbl">composite · ${s.verdict}${s.percentile!=null?` · p${s.percentile}`:''}</div></div>
+      <div style="margin-left:auto;text-align:center">${fo?dial(fo.fomo):''}</div>
+    </div>
+    <div style="font-size:15px;font-weight:700">${esc(f.symbol||'?')}
+      <span class="sub" style="font-weight:400">${esc(f.name||'')}</span></div>
+    <div class="sub">${esc(f.dex||'')} · <a href="${esc(f.url)}" target="_blank" rel="noopener">DEX Screener ↗</a></div>
 
-    <div class="kv">
+    <div class="grp"><h3>Score history</h3>${sparkline(hist.map(h=>h.composite))}</div>
+
+    ${fo?`<div class="grp"><h3>What is driving the crowd</h3>
+      <div class="bars">${comp}</div>
+      ${fo.reasons.map(r=>`<div class="why">${esc(r)}</div>`).join('')||'<p class="sub">No FOMO driver firing — this is a quiet chart.</p>'}
+    </div>`:''}
+
+    <div class="grp"><h3>Metrics</h3><div class="kv num">
       <div>Price</div><div>${fmtUsd(f.priceUsd)}</div>
       <div>Liquidity</div><div>${fmtUsd(f.liqUsd)}</div>
       <div>Market cap</div><div>${fmtUsd(f.mcap)}</div>
-      <div>Liq / MCap</div><div>${(f.liqMcapRatio*100).toFixed(1)}%</div>
-      <div>Age</div><div>${f.ageH.toFixed(1)} h</div>
+      <div>Liq / mcap</div><div>${(f.liqMcapRatio*100).toFixed(1)}%</div>
+      <div>Age</div><div>${f.ageH<1?Math.round(f.ageH*60)+'m':f.ageH.toFixed(1)+'h'}</div>
       <div>5m / 1h / 6h</div><div>
-        <span style="color:${clr(f.priceChange.m5)}">${pct(f.priceChange.m5)}</span> /
-        <span style="color:${clr(f.priceChange.h1)}">${pct(f.priceChange.h1)}</span> /
-        <span style="color:${clr(f.priceChange.h6)}">${pct(f.priceChange.h6)}</span></div>
-      <div>Vol 1h / 24h</div><div>${fmtUsd(f.volume.h1)} / ${fmtUsd(f.volume.h24)}</div>
-      <div>Vol accel</div><div>${f.volAccel.toFixed(2)}x</div>
-      <div>Tx velocity</div><div>${f.txVelocity.toFixed(2)}x</div>
+        <span class="${cls(f.priceChange.m5)}">${pct(f.priceChange.m5)}</span> ·
+        <span class="${cls(f.priceChange.h1)}">${pct(f.priceChange.h1)}</span> ·
+        <span class="${cls(f.priceChange.h6)}">${pct(f.priceChange.h6)}</span></div>
+      <div>Vol 1h / 24h</div><div>${fmtUsd(f.volume.h1)} · ${fmtUsd(f.volume.h24)}</div>
+      <div>Vol accel</div><div>${f.volAccel.toFixed(2)}×</div>
       <div>1h buy flow</div><div>${(f.buyRatioH1*100).toFixed(0)}% buys</div>
-      <div>24h turnover</div><div>${f.turnoverH24.toFixed(1)}x liq</div>
-      <div>Boost</div><div>${f.hasBoost? f.boostAmount.toFixed(0):'&mdash;'}</div>
-    </div>
+      <div>24h turnover</div><div>${f.turnoverH24.toFixed(1)}× liq</div>
+      ${fo?`<div>Attention saturation</div><div>${fo.saturation}× tier median</div>`:''}
+      ${fo&&fo.drawdown!=null?`<div>Off observed high</div><div>${(fo.drawdown*100).toFixed(0)}%</div>`:''}
+    </div></div>
 
-    <div class="grp"><h3>Phase &mdash; ${esc(a.phase)} (confidence: ${esc(a.confidence)})</h3>
-      <p>${esc(a.phaseNote)}</p></div>
+    <div class="grp"><h3>${esc(a.phase)} · confidence ${esc(a.confidence)}</h3>
+      <p style="color:var(--ink-2)">${esc(a.phase_note)}</p></div>
     <div class="grp"><h3>Thesis</h3>${list(a.thesis)}</div>
     <div class="grp risk"><h3>Risks</h3>${list(a.risks)}</div>
-    <div class="grp"><h3>Invalidation &mdash; your stop list</h3>${list(a.invalidation)}</div>
-    <div class="grp"><h3>Not visible to this prototype yet</h3>${list(a.missingChecks)}</div>
-    ${llmHtml}
-    <div class="grp"><h3>Framing</h3><p class="muted">${esc(a.framing)}</p></div>
-
-    <div class="grp"><h3>Your notes (fed into the LLM layer)</h3>
+    <div class="grp"><h3>Invalidation — your stop list</h3>${list(a.invalidation)}</div>
+    ${panelHtml(panel)}
+    <div class="grp"><h3>Notes <span style="text-transform:none;letter-spacing:0">(fed to the arbiter)</span></h3>
       <textarea id="note">${esc(t.note||'')}</textarea>
-      <button class="secondary" id="saveNote" style="margin-top:6px">Save note</button></div>
+      <button class="ghost" id="saveNote" style="margin-top:7px">Save</button></div>
   </div>`;
 
-  $('#saveNote').onclick = async ()=>{
+  $('#saveNote').onclick=async()=>{
     await fetch('/api/note/'+encodeURIComponent(f.mint),{method:'POST',
-      headers:{'Content-Type':'application/json'}, body:JSON.stringify({note:$('#note').value})});
-    $('#saveNote').textContent='Saved'; setTimeout(()=>$('#saveNote').textContent='Save note',1200);
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({note:$('#note').value})});
+    $('#saveNote').textContent='Saved'; setTimeout(()=>$('#saveNote').textContent='Save',1200);
   };
 }
 
-// ---------- scorecard: the curation loop, made visible ----------
-
+// ---------- scorecard ----------
 function calBar(cal){
-  if(!cal?.some(b=>b.n)) return '<span class="muted">no graded calls</span>';
-  return `<div class="cal" title="stated conviction vs actual hit rate">${
-    cal.map(b=>{
-      if(!b.n) return '<i class="miss" style="height:1px"></i>';
-      const h = Math.max(2, (b.actual||0)*26);
-      return `<i style="height:${h}px" title="${b.bucket}: n=${b.n}, stated ${b.stated}, actual ${b.actual}"></i>`;
-    }).join('')}</div>
-    <span class="sub">${cal.filter(b=>b.n).map(b=>`${b.bucket}:${b.actual==null?'-':Math.round(b.actual*100)+'%'}`).join(' ')}</span>`;
+  if(!cal?.some(b=>b.n)) return '<span class="sub">no directional calls</span>';
+  return `<div style="display:flex;gap:3px;align-items:flex-end;height:24px">${
+    cal.map(b=>b.n
+      ? `<i data-tip="${b.bucket}: n=${b.n}, stated ${b.stated}, actual ${b.actual}" style="flex:1;background:var(--s1);border-radius:2px 2px 0 0;height:${Math.max(2,(b.actual||0)*24)}px"></i>`
+      : '<i style="flex:1;background:var(--grid);height:1px"></i>').join('')}</div>`;
 }
 
 async function loadScorecard(){
-  const sc = await fetch('/api/scorecard').then(r=>r.json()).catch(()=>null);
+  const sc=await fetch('/api/scorecard').then(r=>r.json()).catch(()=>null);
   if(!sc) return;
-  const t = sc.totals;
-  const rows = Object.entries(sc.agents).map(([id,a])=>{
-    const vb = sc.vs_baseline[id];
+  const t=sc.totals;
+  const rows=Object.entries(sc.agents).map(([id,a])=>{
+    const vb=sc.vs_baseline[id];
     return `<tr>
-      <td><span class="sym">${esc(id)}</span>${a.unproven && a.n_graded? '<br><span class="sub">unproven (&lt;10)</span>':''}</td>
-      <td>${a.n_graded||0}<span class="sub">/${a.n_calls}</span></td>
-      <td>${a.n_directional||0}</td>
-      <td>${a.hit_rate==null?'<span class="sub">no directional calls</span>':`<b style="color:${a.hit_rate>=0.5?'var(--good)':'var(--bad)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
-      <td>${a.brier==null?'&mdash;':a.brier}</td>
-      <td style="text-align:left">${calBar(a.calibration)}</td>
-      <td>${a.longs?.n||0}</td>
-      <td>${a.passes?.avoided_loss==null?'&mdash;':Math.round(a.passes.avoided_loss*100)+'%'}</td>
-      <td>${a.passes?.missed_gain_pct==null?'&mdash;':`<span style="color:var(--warn)">+${a.passes.missed_gain_pct}%</span>`}</td>
-      <td>${a.longs?.expectancy_pct==null?'&mdash;':`<span style="color:${a.longs.expectancy_pct>0?'var(--good)':'var(--bad)'}">${a.longs.expectancy_pct>0?'+':''}${a.longs.expectancy_pct}%</span>`}</td>
-      <td>${a.longs?.rugged||0}</td>
-      <td>$${(a.cost_usd||0).toFixed(3)}</td>
-      <td>${vb? (vb.beats_baseline?`<span class="beats">+${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`:`<span class="loses">${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`) : (id==='baseline_rules'?'<span class="sub">benchmark</span>':'&mdash;')}</td>
-    </tr>`;
-  }).join('');
+      <td><b>${esc(id)}</b>${a.n_graded&&a.unproven?'<br><span class="sub">unproven</span>':''}</td>
+      <td class="num">${a.n_graded||0}<span class="sub">/${a.n_calls}</span></td>
+      <td class="num">${a.n_directional||0}</td>
+      <td class="num">${a.hit_rate==null?'<span class="sub">no dir. calls</span>'
+        :`<b style="color:${a.hit_rate>=.5?'var(--good)':'var(--critical)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
+      <td class="num">${a.brier??'—'}</td>
+      <td style="text-align:left;min-width:90px">${calBar(a.calibration)}</td>
+      <td class="num">${a.longs?.n||0}</td>
+      <td class="num">${a.longs?.expectancy_pct==null?'—'
+        :`<span class="${a.longs.expectancy_pct>0?'up':'down'}">${pct(a.longs.expectancy_pct)}</span>`}</td>
+      <td class="num">${a.passes?.avoided_loss==null?'—':Math.round(a.passes.avoided_loss*100)+'%'}</td>
+      <td class="num">${a.passes?.missed_gain_pct==null?'—':`<span style="color:var(--warn)">${pct(a.passes.missed_gain_pct)}</span>`}</td>
+      <td class="num">$${(a.cost_usd||0).toFixed(3)}</td>
+      <td class="num">${vb?(vb.beats_baseline?`<span class="beats">+${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`
+        :`<span class="loses">${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`):(id==='baseline_rules'?'<span class="sub">benchmark</span>':'—')}</td>
+    </tr>`;}).join('');
 
-  $('#scoreWrap').innerHTML = `
-    <div style="padding:10px 14px" class="sub">
-      ${t.predictions} predictions logged &middot; ${t.graded} graded &middot; ${t.open} still open
-      &middot; total spend $${t.spend_usd.toFixed(4)}
-      <br>Hit rate covers <b>directional calls only</b> (long/avoid) &mdash; a &ldquo;pass&rdquo; is a decision not to participate, not a forecast, so it is tracked separately under Passed&nbsp;OK / Missed. Dead band scales with horizon (15m &plusmn;8%, 60m &plusmn;18%, 6h &plusmn;35%).
-      Brier: lower is better, 0.25 = a coin flip asserted at 50%.
-      &ldquo;vs base&rdquo; compares each paid agent to the free deterministic score &mdash;
-      an agent that can&rsquo;t beat it isn&rsquo;t worth paying for.
-    </div>
-    <table><thead><tr>
-      <th>Agent</th><th>Graded</th><th>Dir</th><th>Hit</th><th>Brier</th>
-      <th style="text-align:left">Calibration</th>
-      <th>Longs</th><th>Long EV</th><th>Passed&nbsp;OK</th><th>Missed</th><th>Rugged</th><th>Spend</th><th>vs base</th>
-    </tr></thead><tbody>${rows || '<tr><td colspan="13" class="muted">no predictions yet &mdash; run a scan</td></tr>'}</tbody></table>`;
+  $('#scoreWrap').innerHTML=`<div class="note">
+      ${t.predictions} predictions · ${t.graded} graded · ${t.open} open · spend $${t.spend_usd.toFixed(4)}<br>
+      Hit rate covers <b>directional calls only</b> — a “pass” is a decision not to participate, not a
+      forecast, so it is tracked separately as Passed OK / Missed. Dead band scales with horizon
+      (15m ±8%, 60m ±18%, 6h ±35%). Brier: lower is better; 0.25 is a coin flip asserted at 50%.
+      “vs base” compares each paid agent to the free deterministic score — one that can’t beat it isn’t worth paying for.
+    </div><div class="scroll"><table><thead><tr>
+      <th>Agent</th><th>Graded</th><th>Dir</th><th>Hit</th><th>Brier</th><th style="text-align:left">Calibration</th>
+      <th>Longs</th><th>Long EV</th><th>Passed OK</th><th>Missed</th><th>Spend</th><th>vs base</th>
+    </tr></thead><tbody>${rows||'<tr><td colspan="12" class="sub">no predictions yet</td></tr>'}</tbody></table></div>`;
 
-  const open = await fetch('/api/ledger/open').then(r=>r.json()).catch(()=>[]);
-  $('#openWrap').innerHTML = open.length ? `<table><thead><tr>
-      <th>Token</th><th>Agent</th><th>Call</th><th>Dir</th><th>Conv</th>
-      <th>Entry</th><th>Horizon</th><th>Grades in</th>
+  const open=await fetch('/api/ledger/open').then(r=>r.json()).catch(()=>[]);
+  $('#openWrap').innerHTML=open.length?`<div class="scroll"><table><thead><tr>
+      <th>Token</th><th>Agent</th><th>Call</th><th>Dir</th><th>Conv</th><th>Entry</th><th>Grades in</th>
     </tr></thead><tbody>${open.slice(0,60).map(o=>`<tr>
-      <td><span class="sym">${esc(o.symbol||'?')}</span></td>
-      <td class="sub">${esc(o.agent)}</td>
+      <td><b>${esc(o.symbol||'?')}</b></td><td class="sub">${esc(o.agent)}</td>
       <td><span class="call ${esc(o.call)}">${esc(o.call)}</span></td>
       <td class="sub">${esc(o.predicted_direction)}</td>
-      <td>${Math.round((o.conviction||0)*100)}%</td>
-      <td class="sub">${fmtUsd(o.entry_price)}</td>
-      <td class="sub">${o.horizon_minutes}m</td>
-      <td class="sub">${Math.max(0,Math.round(o.seconds_left/60))}m</td>
-    </tr>`).join('')}</tbody></table>`
-    : '<div class="empty">Nothing in flight. Predictions appear here until their horizon elapses.</div>';
+      <td class="num">${Math.round((o.conviction||0)*100)}%</td>
+      <td class="num sub">${fmtUsd(o.entry_price)}</td>
+      <td class="num sub">${Math.max(0,Math.round(o.seconds_left/60))}m</td></tr>`).join('')}
+    </tbody></table></div>`:'<div class="empty">Nothing in flight.</div>';
 }
 
-function showTab(which){
-  const radar = which==='radar';
-  $('#radarView').hidden = !radar;
-  $('#scoreView').hidden = radar;
-  $('#tabRadar').classList.toggle('on', radar);
-  $('#tabScore').classList.toggle('on', !radar);
-  if(!radar) loadScorecard();
+// ---------- adaptation ----------
+async function loadAdapt(){
+  const a=await fetch('/api/adapt').then(r=>r.json()).catch(()=>null);
+  if(!a) return;
+  const rows=(a.ranked||[]).map(r=>{
+    const mag=Math.min(1,Math.abs(r.ic)/0.4);
+    return `<tr>
+      <td><b>${esc(r.feature)}</b> <span class="sub">${esc(r.pillar)}</span></td>
+      <td class="num">${r.n}</td>
+      <td style="text-align:left;min-width:130px" data-tip="IC ${r.ic} vs significance threshold ±${r.threshold}">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="track" style="flex:1"><i style="width:${mag*100}%;background:${r.ic>0?'var(--s3)':'var(--critical)'}"></i></div>
+          <span class="num" style="width:44px;text-align:right">${r.ic>0?'+':''}${r.ic}</span></div></td>
+      <td>${r.significant?'<span class="beats">signal</span>':'<span class="sub">noise</span>'}</td>
+    </tr>`;}).join('');
+  $('#adaptWrap').innerHTML=`<div class="note">
+      Spearman rank correlation between each feature at entry and the return that followed.
+      Rank, not Pearson — memecoin returns are fat-tailed enough that one 40× would otherwise
+      set every weight. A feature is only called <b>signal</b> when |IC| clears ±2/√n.
+      ${a.enough_data?`Shrinkage λ ${a.shrinkage_lambda} — proposals are blended toward the hand-set prior.`
+        :`<b style="color:var(--warn)">Not enough data yet: ${a.n_samples}/${a.min_samples} graded samples on model ${esc(a.model_version||'—')}.</b>
+          Nothing is proposed until the sample clears that bar.`}
+      Nothing auto-applies — set <code>adapt.apply</code> in config.json to use proposals.
+    </div>${rows?`<div class="scroll"><table><thead><tr>
+      <th>Feature</th><th>n</th><th style="text-align:left">Information coefficient</th><th>Verdict</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`
+    :'<div class="empty">No graded samples carrying a feature vector yet.<br><span class="sub">Feature vectors are recorded from model '+esc(a.model_version||'')+' onward.</span></div>'}
+    ${a.proposed_weights?`<div class="note"><b>Proposed pillar weights</b><br>${
+      Object.entries(a.proposed_weights).map(([k,v])=>`${k}: ${a.prior_weights[k]} → <b>${v}</b>`).join(' · ')}</div>`:''}`;
 }
-$('#tabRadar').onclick = ()=>showTab('radar');
-$('#tabScore').onclick = ()=>showTab('score');
 
-$('#scan').onclick = async ()=>{ $('#scan').disabled=true; await fetch('/api/scan',{method:'POST'}); loadStatus(); };
-$('#auto').onchange = e =>{
-  if(window._auto) clearInterval(window._auto);
-  if(e.target.checked) window._auto = setInterval(()=>{
-    loadTokens(); if($('#scoreView').hidden===false) loadScorecard();
-  }, 60000);
+// ---------- tabs ----------
+function show(which){
+  for(const [id,view] of [['tabRadar','#radarView'],['tabScore','#scoreView'],['tabAdapt','#adaptView']]){
+    const on = id==='tab'+which;
+    $('#'+id).classList.toggle('on',on);
+    $(view).hidden=!on;
+  }
+  if(which==='Score') loadScorecard();
+  if(which==='Adapt') loadAdapt();
+}
+$('#tabRadar').onclick=()=>show('Radar');
+$('#tabScore').onclick=()=>show('Score');
+$('#tabAdapt').onclick=()=>show('Adapt');
+
+$('#scan').onclick=async()=>{ $('#scan').disabled=true; await fetch('/api/scan',{method:'POST'}); loadStatus(); };
+$('#auto').onchange=e=>{
+  if(window._t) clearInterval(window._t);
+  if(e.target.checked) window._t=setInterval(()=>{
+    loadTokens();
+    if(!$('#scoreView').hidden) loadScorecard();
+    if(!$('#adaptView').hidden) loadAdapt();
+  },60000);
 };
 
 loadTokens();
