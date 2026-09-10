@@ -3,206 +3,197 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRYPTOagent</title>
+<title>CRYPTOagent Terminal</title>
 <style>
   /* ------------------------------------------------------------------
-     Majesty lives in the CHROME; accessibility lives in the DATA.
-     A gold-led categorical palette was tested and FAILED validation
-     (gold L=0.728, outside the band; red/green dE 6.6 under deuteranopia),
-     so gold carries frames, rules and the brand - never a data series.
-     Series hues are the validated dark steps, re-checked against THIS
-     surface: CVD dE 8.4, normal-vision 19.8, all >=3:1 on #17141a.
+     Two typefaces, on purpose. Times New Roman is the DISPLAY face -
+     brand, headings, prose - which is where the editorial weight of a
+     financial paper comes from. The dense numeric grid uses a tabular
+     system face, because a serif at 12px in a 14-column table is where
+     legibility goes to die. Numbers are the product; they get the font
+     that renders them cleanly.
+
+     Colour: a gold-led categorical palette was tested and FAILED
+     validation (gold L=0.728 outside band; red/green dE 6.6 deuteranopia),
+     so gold carries chrome only. Data hues are validated dark steps:
+     CVD dE 8.4, normal-vision 19.8, all >=3:1 on the #16131b surface.
      ------------------------------------------------------------------ */
   :root{
-    --plane:#0d0b10; --surface:#17141a; --surface-2:#1f1b24; --surface-3:#272231;
-    --gold:#c9a227; --gold-dim:#8a7020; --gold-wash:rgba(201,162,39,.10);
-    --ink:#f2ede4; --ink-2:#b9b2a6; --muted:#857d74;
-    --grid:#2a2530; --hairline:rgba(201,162,39,.18);
+    --plane:#0c0a0f; --surface:#16131b; --surface-2:#1d1925; --surface-3:#262030;
+    --gold:#c9a227; --gold-dim:#8a7020; --gold-wash:rgba(201,162,39,.09);
+    --ink:#f2ede4; --ink-2:#b6afa4; --muted:#7e766d;
+    --grid:#262130; --hairline:rgba(201,162,39,.16); --rule:#2f2839;
     --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
-    --good:#0ca30c; --warn:#fab219; --critical:#d03b3b;
+    --up:#0ca30c; --down:#d03b3b; --warn:#fab219;
+    --serif:"Times New Roman",Times,serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --ui:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;
   }
   *{box-sizing:border-box}
   [hidden]{display:none!important}
-  html,body{background:var(--plane);color:var(--ink)}
-  body{margin:0;font:15px/1.6 "Times New Roman",Times,serif}
-  .num{font-variant-numeric:tabular-nums}
-  h1,h2,h3{font-weight:400;margin:0}
+  html,body{background:var(--plane);color:var(--ink);margin:0}
+  body{font:13px/1.45 var(--ui);-webkit-font-smoothing:antialiased}
+  .serif{font-family:var(--serif)}
+  h1,h2,h3{margin:0;font-weight:400;font-family:var(--serif)}
 
-  header{display:flex;align-items:center;gap:20px;padding:13px 22px;background:var(--surface);
-    border-bottom:1px solid var(--hairline);position:sticky;top:0;z-index:30;flex-wrap:wrap}
-  .brand{font-size:19px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+  /* ---------- top bar ---------- */
+  .top{display:flex;align-items:center;gap:16px;height:46px;padding:0 16px;
+    background:var(--surface);border-bottom:1px solid var(--hairline);position:sticky;top:0;z-index:40}
+  .brand{font-family:var(--serif);font-size:19px;letter-spacing:.17em;text-transform:uppercase;
+    color:var(--gold);white-space:nowrap}
   .brand em{font-style:normal;color:var(--ink-2)}
-  .tabs{display:flex}
+  .tabs{display:flex;height:100%}
   .tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);
-    font:inherit;font-size:14px;padding:5px 13px;cursor:pointer;transition:.15s;letter-spacing:.02em}
+    font:inherit;font-size:12.5px;padding:0 13px;height:100%;cursor:pointer;letter-spacing:.04em}
   .tab:hover{color:var(--ink-2)}
   .tab.on{color:var(--gold);border-bottom-color:var(--gold)}
-  button.act{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);
-    padding:6px 16px;font:inherit;font-size:14px;cursor:pointer;letter-spacing:.06em;transition:.15s}
-  button.act:hover:not(:disabled){background:var(--gold-wash)}
-  button.act:disabled{opacity:.4;cursor:default}
-  button.ghost{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--hairline);
-    padding:5px 13px;font:inherit;cursor:pointer}
-  .meta{color:var(--muted);font-size:13px;font-style:italic}
-  .pulse{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none;transition:background .3s}
-  .pulse.on{background:var(--good);animation:beat 2s ease-in-out infinite}
-  @keyframes beat{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(12,163,12,.5)}
-                  50%{opacity:.65;box-shadow:0 0 0 5px rgba(12,163,12,0)}}
-  .flash{animation:flash 1s ease-out}
-  @keyframes flash{0%{background:var(--gold-wash)}100%{background:transparent}}
+  select,button.ui{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--rule);
+    font:inherit;font-size:12px;padding:4px 9px;cursor:pointer}
+  select:hover,button.ui:hover{border-color:var(--gold-dim);color:var(--ink)}
+  button.go{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);
+    font:inherit;font-size:12px;padding:4px 13px;cursor:pointer;letter-spacing:.06em}
+  button.go:hover:not(:disabled){background:var(--gold-wash)}
+  button.go:disabled{opacity:.4;cursor:default}
+  .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+  .pulse.on{background:var(--up);animation:beat 2s ease-in-out infinite}
+  @keyframes beat{0%,100%{opacity:1}50%{opacity:.4}}
+  .clock{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.03em}
 
-  .rail{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--hairline);
-    border-bottom:1px solid var(--hairline)}
-  .lay{background:var(--surface);padding:9px 14px;position:relative}
-  .lay .n{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim)}
-  .lay .t{font-size:15px;margin-top:1px}
-  .lay .v{font-size:12px;color:var(--muted);font-style:italic;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
-  .lay .st{position:absolute;top:11px;right:13px;width:6px;height:6px;border-radius:50%}
-  @media(max-width:1200px){.rail{grid-template-columns:repeat(3,1fr)}}
+  /* ---------- layer rail ---------- */
+  .rail{display:flex;background:var(--surface);border-bottom:1px solid var(--rule);overflow-x:auto}
+  .lay{flex:1;min-width:150px;padding:6px 14px;border-right:1px solid var(--rule);position:relative;white-space:nowrap}
+  .lay:last-child{border-right:0}
+  .lay .n{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim)}
+  .lay .t{font-family:var(--serif);font-size:14px;line-height:1.2}
+  .lay .v{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+  .lay .st{position:absolute;top:8px;right:10px;width:5px;height:5px;border-radius:50%}
 
-  .wrap{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(390px,1fr);gap:16px;padding:16px;align-items:start}
-  @media(max-width:1100px){.wrap{grid-template-columns:1fr}}
-  .card{background:var(--surface);border:1px solid var(--hairline)}
-  .card > h2{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);
-    padding:12px 18px;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:10px}
-  .card > h2 .r{margin-left:auto;text-transform:none;letter-spacing:.02em;color:var(--muted);
-    font-size:13px;font-style:italic}
+  /* ---------- grid ---------- */
+  .panes{display:grid;grid-template-columns:minmax(0,1fr) 0;transition:grid-template-columns .18s}
+  .panes.open{grid-template-columns:minmax(0,1fr) 400px}
+  @media(max-width:1250px){.panes.open{grid-template-columns:minmax(0,1fr) 340px}}
+  .gridwrap{overflow:auto;max-height:calc(100vh - 46px - 46px - 26px)}
+  table.g{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;
+    font-variant-numeric:tabular-nums}
+  table.g thead th{position:sticky;top:0;z-index:5;background:var(--surface);
+    font-family:var(--ui);font-weight:500;font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--gold-dim);padding:7px 9px;border-bottom:1px solid var(--hairline);
+    white-space:nowrap;cursor:pointer;user-select:none}
+  table.g thead th:hover{color:var(--gold)}
+  table.g thead th .ar{opacity:.55;font-size:9px}
+  table.g td{padding:5px 9px;border-bottom:1px solid var(--grid);white-space:nowrap}
+  table.g tbody tr{cursor:pointer}
+  table.g tbody tr:hover{background:var(--surface-2)}
+  table.g tbody tr.sel{background:#1c2434;box-shadow:inset 2px 0 0 var(--gold)}
+  .r{text-align:right} .l{text-align:left} .c{text-align:center}
+  .sym{font-family:var(--serif);font-size:14px;color:var(--ink)}
+  .nm{color:var(--muted);font-size:10px;font-family:var(--ui)}
+  .up{color:var(--up)} .down{color:var(--down)} .zero{color:var(--muted)}
+  /* the tick: a cell that just changed gets a brief wash, so movement is felt */
+  @keyframes tickUp{0%{background:rgba(12,163,12,.32)}100%{background:transparent}}
+  @keyframes tickDn{0%{background:rgba(208,59,59,.32)}100%{background:transparent}}
+  td.tu{animation:tickUp 1.1s ease-out} td.td{animation:tickDn 1.1s ease-out}
+  .pill{display:inline-block;padding:0 6px;font-size:10px;font-family:var(--ui);
+    letter-spacing:.06em;text-transform:uppercase;border:1px solid}
+  .STRONG,.long{color:var(--up);border-color:rgba(12,163,12,.45)}
+  .WATCH{color:var(--warn);border-color:rgba(250,178,25,.4)}
+  .NEUTRAL,.pass{color:var(--muted);border-color:var(--rule)}
+  .AVOID,.avoid{color:var(--down);border-color:rgba(208,59,59,.45)}
+  .mini{display:inline-block;width:46px;height:5px;background:var(--grid);vertical-align:middle}
+  .mini i{display:block;height:100%}
+  .aura{font-family:var(--serif);font-size:14px}
+  .enduring{color:var(--up)} .holding{color:var(--s4)}
+  .fading{color:var(--warn)} .spent{color:var(--muted)}
 
-  .row{display:grid;grid-template-columns:130px 62px 1fr 76px 78px;gap:14px;align-items:center;
-    padding:12px 18px;border-bottom:1px solid var(--grid);cursor:pointer}
-  .row:last-child{border-bottom:0}
-  .row:hover{background:var(--surface-2)}
-  .row.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--gold)}
-  .tick{font-size:17px;letter-spacing:.02em}
-  .tname{color:var(--muted);font-size:12px;font-style:italic;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;max-width:124px}
-  .comp{font-size:26px;line-height:1}
-  .verd{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
-  .STRONG{color:var(--good)} .WATCH{color:var(--warn)}
-  .NEUTRAL{color:var(--muted)} .AVOID{color:var(--critical)}
-  .bars{display:grid;gap:5px}
-  .bl{display:grid;grid-template-columns:30px 1fr 28px;gap:8px;align-items:center}
-  .bl b{font-size:9.5px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
-  .track{height:4px;background:var(--grid);overflow:hidden}
-  .track i{display:block;height:100%;border-radius:0 4px 4px 0}
-  .bl u{font-size:11px;color:var(--ink-2);text-decoration:none;text-align:right}
-  .chg{text-align:right;font-size:14px}
-  .up{color:var(--good)} .down{color:var(--critical)} .flat{color:var(--muted)}
-  .sub{color:var(--muted);font-size:12px}
-
-  .detail{padding:18px}
-  .hero{display:flex;align-items:flex-start;gap:18px;margin-bottom:14px}
-  .hero .big{font-size:52px;line-height:.92;letter-spacing:-.02em}
-  .hero .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold-dim);margin-top:6px}
-  .grp{margin:20px 0}
-  .grp h3{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);
-    margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--grid)}
-  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px}
-  .kv div:nth-child(odd){color:var(--muted)}
+  /* ---------- side panel ---------- */
+  .side{background:var(--surface);border-left:1px solid var(--hairline);overflow:auto;
+    max-height:calc(100vh - 46px - 46px - 26px)}
+  .side h3{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
+    font-family:var(--ui);margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+  .side .pad{padding:14px 16px}
+  .hero{display:flex;align-items:baseline;gap:12px}
+  .hero .big{font-family:var(--serif);font-size:46px;line-height:1}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-family:var(--mono);font-size:12px}
+  .kv div:nth-child(odd){color:var(--muted);font-family:var(--ui)}
   .kv div:nth-child(even){text-align:right}
-  ul{margin:0;padding-left:18px} li{margin:5px 0;font-size:14px}
-  .risk li{color:#f0b9b4}
-  .why{background:var(--surface-2);border-left:2px solid var(--gold-dim);padding:8px 13px;
-    margin:7px 0;font-size:13.5px;color:var(--ink-2);font-style:italic}
-  .empty{padding:60px 18px;text-align:center;color:var(--muted);font-style:italic}
-  a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
-  textarea{width:100%;background:var(--plane);border:1px solid var(--hairline);color:var(--ink);
-    padding:10px;font:inherit;resize:vertical;min-height:60px}
+  .why{border-left:2px solid var(--gold-dim);padding:6px 11px;margin:6px 0;font-size:12px;
+    color:var(--ink-2);background:var(--surface-2)}
+  ul{margin:0;padding-left:16px} li{margin:4px 0;font-size:12px;color:var(--ink-2)}
 
-  .pred{background:var(--surface-2);border:1px solid var(--hairline);border-left:3px solid var(--gold);padding:13px 15px}
-  .pred .stmt{font-size:17px;color:var(--ink);margin-bottom:9px;line-height:1.4}
-  .band{position:relative;height:20px;background:var(--grid);overflow:hidden}
-  .band i{position:absolute;top:0;bottom:0;display:block}
-  .band .p90{background:rgba(201,133,0,.20)}
-  .band .p50{background:rgba(201,133,0,.52)}
-  .band .mid{width:1px;background:var(--ink-2)}
+  /* ---------- status bar ---------- */
+  .status{position:fixed;bottom:0;left:0;right:0;height:26px;background:var(--surface);
+    border-top:1px solid var(--hairline);display:flex;align-items:center;gap:18px;padding:0 14px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);z-index:40}
+  .status b{color:var(--ink-2);font-weight:400}
 
-  .agent{background:var(--surface-2);border:1px solid var(--hairline);padding:11px 14px;margin-bottom:8px}
-  .agent .top{display:flex;align-items:baseline;gap:10px;margin-bottom:5px;flex-wrap:wrap}
-  .who{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-dim)}
-  .call{padding:1px 9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid}
-  .long{color:var(--good);border-color:rgba(12,163,12,.45)}
-  .avoid{color:var(--critical);border-color:rgba(208,59,59,.45)}
-  .pass{color:var(--muted);border-color:var(--grid)}
-  .arb{border-left:3px solid var(--gold)}
-  .split{border-left:2px solid var(--warn);padding-left:10px}
-
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th{text-align:right;padding:9px 12px;border-bottom:1px solid var(--hairline);color:var(--gold-dim);
-    font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:400}
-  td{text-align:right;padding:9px 12px;border-bottom:1px solid var(--grid)}
-  th:first-child,td:first-child{text-align:left}
-  .note{padding:13px 18px;color:var(--muted);font-size:13px;line-height:1.7;font-style:italic;
-    border-bottom:1px solid var(--grid)}
-  .note b{font-style:normal;color:var(--ink-2)}
-  .beats{color:var(--good)} .loses{color:var(--critical)}
-  .scroll{overflow-x:auto}
+  /* ---------- column picker ---------- */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:flex;
+    align-items:center;justify-content:center}
+  .sheet{background:var(--surface);border:1px solid var(--hairline);width:min(660px,92vw);
+    max-height:80vh;overflow:auto}
+  .sheet h2{font-size:15px;padding:14px 18px;border-bottom:1px solid var(--rule);color:var(--gold)}
+  .cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px;padding:14px 18px}
+  .cols label{display:flex;gap:8px;align-items:center;padding:5px 7px;cursor:pointer;font-size:12px}
+  .cols label:hover{background:var(--surface-2)}
+  .cols small{color:var(--muted);display:block;font-size:10.5px}
+  .sheetfoot{padding:12px 18px;border-top:1px solid var(--rule);display:flex;gap:10px;align-items:center}
+  .empty{padding:50px;text-align:center;color:var(--muted);font-family:var(--serif);font-size:15px}
   #tip{position:fixed;pointer-events:none;z-index:99;background:var(--surface-3);
-    border:1px solid var(--hairline);padding:8px 12px;font-size:13px;max-width:300px;
-    box-shadow:0 10px 30px rgba(0,0,0,.7);opacity:0;transition:opacity .12s}
+    border:1px solid var(--hairline);padding:7px 11px;font-size:12px;max-width:290px;
+    box-shadow:0 12px 34px rgba(0,0,0,.75);opacity:0;transition:opacity .1s}
+  .note{padding:11px 16px;color:var(--muted);font-size:12px;line-height:1.65;border-bottom:1px solid var(--grid)}
+  .note b{color:var(--ink-2);font-weight:400}
 </style>
 </head>
 <body>
 <div id="tip"></div>
 
-<header>
+<div class="top">
   <div class="brand">CRYPTO<em>agent</em></div>
   <div class="tabs">
-    <button class="tab on" id="tabRadar">Radar</button>
-    <button class="tab" id="tabFc">Forecast</button>
-    <button class="tab" id="tabTg">Telegram</button>
-    <button class="tab" id="tabScore">Scorecard</button>
-    <button class="tab" id="tabAdapt">Adaptation</button>
+    <button class="tab on" data-v="Radar">Radar</button>
+    <button class="tab" data-v="Fc">Forecast</button>
+    <button class="tab" data-v="Tg">Telegram</button>
+    <button class="tab" data-v="Score">Scorecard</button>
+    <button class="tab" data-v="Adapt">Adaptation</button>
   </div>
-  <button class="act" id="scan">Run scan</button>
-  <span class="pulse" id="pulse"></span>
-  <span class="meta" id="status">connecting&hellip;</span>
-</header>
+  <select id="tpl" title="Column template"></select>
+  <button class="ui" id="cols">Columns</button>
+  <div class="right">
+    <label class="clock" style="cursor:pointer"><input type="checkbox" id="liveTick" checked> live 10s</label>
+    <span class="pulse" id="pulse"></span>
+    <span class="clock" id="clock">--:--:--</span>
+    <button class="go" id="scan">Scan</button>
+  </div>
+</div>
 
-<!-- The evaluation stack, top to bottom. Each layer constrains the one below it. -->
 <div class="rail" id="rail"></div>
 
-<div class="wrap" id="radarView">
-  <div class="card">
-    <h2>Trending <span class="r" id="scanMeta"></span></h2>
-    <div id="list"><div class="empty">No scan yet.</div></div>
-  </div>
-  <div class="card">
-    <h2>Read</h2>
-    <div id="detail"><div class="empty">Select a token.</div></div>
-  </div>
+<div class="panes" id="panes">
+  <div class="gridwrap" id="gridwrap"><div class="empty">No scan yet.</div></div>
+  <div class="side" id="side"></div>
 </div>
 
-<div id="fcView" hidden style="padding:16px"><div class="card">
-  <h2>Forecasts <span class="r">stated before being asked, graded after</span></h2>
-  <div id="fcWrap"><div class="empty">loading&hellip;</div></div></div></div>
-
-<div id="tgView" hidden style="padding:16px;display:grid;gap:16px">
-  <div class="card"><h2>Channel scorecard <span class="r">which channels actually have edge</span></h2>
-    <div id="tgScore"><div class="empty">loading&hellip;</div></div></div>
-  <div class="card"><h2>Recent calls</h2><div id="tgFeed"><div class="empty">loading&hellip;</div></div></div>
+<div class="status">
+  <span>SCAN <b id="stScan">—</b></span>
+  <span>TICK <b id="stTick">—</b></span>
+  <span>ROWS <b id="stRows">0</b></span>
+  <span>REGIME <b id="stRegime">—</b></span>
+  <span id="stMsg"></span>
 </div>
-
-<div id="scoreView" hidden style="padding:16px;display:grid;gap:16px">
-  <div class="card"><h2>Agent scorecards <span class="r">measured, not claimed</span></h2>
-    <div id="scoreWrap"><div class="empty">loading&hellip;</div></div></div>
-  <div class="card"><h2>Open predictions</h2><div id="openWrap"><div class="empty">loading&hellip;</div></div></div>
-</div>
-
-<div id="adaptView" hidden style="padding:16px"><div class="card">
-  <h2>Information coefficients <span class="r">what actually predicts</span></h2>
-  <div id="adaptWrap"><div class="empty">loading&hellip;</div></div></div></div>
 
 <script>
 const $=s=>document.querySelector(s);
-let STATE={tokens:[],ts:null}, SEL=null, MACRO=null;
-
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmtUsd=n=>!n||!isFinite(n)?'—':n>=1e9?'$'+(n/1e9).toFixed(2)+'B':n>=1e6?'$'+(n/1e6).toFixed(2)+'M'
-  :n>=1e3?'$'+(n/1e3).toFixed(1)+'k':'$'+(+n).toFixed(n<0.01?7:2);
-const pct=n=>(n>=0?'+':'')+(+n||0).toFixed(1)+'%';
-const cls=n=>n>0.5?'up':n<-0.5?'down':'flat';
+let STATE={tokens:[],ts:null}, SEL=null, MACRO=null, QUOTES={}, PREV={}, VIEW='Radar';
+let SORT={key:'composite',dir:-1};
+
+const nf=(n,d=2)=>n==null||!isFinite(n)?'—':(+n).toFixed(d);
+const usd=n=>!n||!isFinite(n)?'—':n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M'
+  :n>=1e3?(n/1e3).toFixed(1)+'k':(+n).toFixed(n<0.01?6:2);
+const pc=n=>n==null||!isFinite(n)?'—':(n>=0?'+':'')+(+n).toFixed(1)+'%';
+const dirc=n=>n>0.15?'up':n<-0.15?'down':'zero';
 
 const tip=$('#tip');
 document.addEventListener('mousemove',e=>{
@@ -214,338 +205,328 @@ document.addEventListener('mousemove',e=>{
   if(y+b.height>innerHeight-8)y=e.clientY-b.height-14;
   tip.style.left=x+'px'; tip.style.top=y+'px';
 });
+setInterval(()=>{$('#clock').textContent=new Date().toLocaleTimeString('en-GB');},1000);
 
-function bar(label,val,color,tp){
-  const v=val==null?0:Math.max(0,Math.min(100,val));
-  return `<div class="bl" data-tip="${esc(tp||label)}"><b>${label}</b>
-    <div class="track"><i style="width:${val==null?0:Math.max(1.5,v)}%;background:${color}"></i></div>
-    <u class="num">${val==null?'—':v.toFixed(0)}</u></div>`;
-}
-function sparkline(vals,w=320,h=52){
-  if(!vals||vals.length<2) return '<div class="sub">no history yet &mdash; needs two scans</div>';
-  const mn=Math.min(...vals),mx=Math.max(...vals),rng=(mx-mn)||1;
-  const pts=vals.map((v,i)=>[(i/(vals.length-1))*w,h-((v-mn)/rng)*(h-6)-3]);
-  const d=pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
-  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"
-    data-tip="${vals.length} scans &middot; low ${mn.toFixed(0)} &middot; high ${mx.toFixed(0)}">
-    <polygon points="0,${h} ${d} ${w},${h}" fill="var(--gold)" opacity=".09"/>
-    <polyline points="${d}" fill="none" stroke="var(--gold)" stroke-width="1.5"
-      vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
-    <circle cx="${pts.at(-1)[0].toFixed(1)}" cy="${pts.at(-1)[1].toFixed(1)}" r="2.5" fill="var(--gold)"/></svg>`;
-}
-function dial(v,size=112){
-  const p=Math.max(0,Math.min(1,v??0)),R=size/2-10,C=size/2;
-  const a0=Math.PI*0.75,a1=Math.PI*2.25,a=a0+(a1-a0)*p;
-  const arc=(f,t)=>{const x0=C+R*Math.cos(f),y0=C+R*Math.sin(f),x1=C+R*Math.cos(t),y1=C+R*Math.sin(t);
-    return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${R} ${R} 0 ${t-f>Math.PI?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;};
-  const col=p>=.66?'var(--s4)':p>=.4?'var(--s2)':'var(--muted)';
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <path d="${arc(a0,a1)}" stroke="var(--grid)" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <path d="${arc(a0,a)}" stroke="${col}" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <text x="${C}" y="${C+4}" text-anchor="middle" fill="var(--ink)" font-size="26"
-      font-family="Times New Roman,serif">${Math.round(p*100)}</text>
-    <text x="${C}" y="${C+21}" text-anchor="middle" fill="var(--gold-dim)" font-size="8.5"
-      letter-spacing="2" font-family="Times New Roman,serif">FOMO</text></svg>`;
-}
-function volBand(v){
-  if(!v) return '';
-  const max=Math.max(v.expected_move_p90*1.15,5), w=p=>(p/max)*50;
-  return `<div class="band" data-tip="typical &plusmn;${v.expected_move_p50}% &middot; tail &plusmn;${v.expected_move_p90}%">
-    <i class="p90" style="left:${50-w(v.expected_move_p90)}%;width:${2*w(v.expected_move_p90)}%"></i>
-    <i class="p50" style="left:${50-w(v.expected_move_p50)}%;width:${2*w(v.expected_move_p50)}%"></i>
-    <i class="mid" style="left:50%"></i></div>`;
+// live quote overlay: the tick endpoint re-prices what is on screen, so these
+// win over the (older) scan snapshot wherever they exist
+const q=(t,k,fb)=>{const v=QUOTES[t.feat.mint]; return v&&v[k]!=null?v[k]:fb;};
+function miniBar(v,color){
+  const w=Math.max(0,Math.min(100,v||0));
+  return `<span class="mini"><i style="width:${w}%;background:${color}"></i></span>`;
 }
 
-const LAYERS=[
-  {n:'Layer 0',t:'Macro',    tip:'The chain itself. Solana memecoins are a leveraged bet on SOL being bid &mdash; when it bleeds, every chart below is a trap.'},
-  {n:'Layer 1',t:'Cohort',   tip:'The candidate universe from DEX Screener, filtered by liquidity and pool age.'},
-  {n:'Layer 2',t:'Structure',tip:'Per-token mechanics: liquidity depth, order-flow imbalance, turnover, volume acceleration.'},
-  {n:'Layer 3',t:'Crowd',    tip:'FOMO psychology: gain velocity, the second-chance setup, attention saturation as an inverted U.'},
-  {n:'Layer 4',t:'Social',   tip:'Telegram channels as graded agents, plus social velocity where a provider is wired.'},
-  {n:'Layer 5',t:'Forecast', tip:'Bootstrapped ranking and an expected-move band, committed before the fact and graded after.'},
-];
+/* =====================  COLUMN REGISTRY  =====================
+   Every column is declared once: how to read it, how to format it, how wide,
+   and whether it participates in the 10-second tick. Templates are just named
+   lists of ids, so a new view is a one-line change rather than new markup. */
+const COLUMNS={
+  sym:{label:'Symbol',w:'l',sort:t=>t.feat.symbol||'',tip:'Ticker and name',
+    cell:t=>`<div class="sym">${esc(t.feat.symbol||'?')}</div><div class="nm">${esc((t.feat.name||'').slice(0,20))}</div>`},
+  composite:{label:'Score',w:'r',sort:t=>t.score.composite,tip:'Composite of all pillars, risk-discounted',
+    cell:t=>`<b>${t.score.composite.toFixed(0)}</b>`},
+  verdict:{label:'Verdict',w:'c',sort:t=>t.score.composite,tip:'Percentile verdict within this scan',
+    cell:t=>`<span class="pill ${t.score.verdict}">${t.score.verdict}</span>`},
+  aura:{label:'Aura',w:'r',sort:t=>t.aura?.points??-1,
+    tip:'AURA POINTS — will this still be trending in 2-3 hours? Fuel, not ignition. Scored from candle structure.',
+    cell:t=>t.aura?`<span class="aura ${t.aura.band}">${t.aura.points}</span>`:'<span class="zero">—</span>'},
+  auraBand:{label:'Durability',w:'c',sort:t=>t.aura?.points??-1,tip:'Aura band',
+    cell:t=>t.aura?`<span class="${t.aura.band}">${t.aura.band}</span>`:'—'},
+  fomo:{label:'FOMO',w:'r',sort:t=>t.score.fomo??-1,tip:'Crowd ignition, macro-gated',
+    cell:t=>t.score.fomo==null?'—':`${miniBar(t.score.fomo,'var(--s4)')} ${t.score.fomo.toFixed(0)}`},
+  price:{label:'Price',w:'r',live:1,sort:t=>q(t,'price',t.feat.priceUsd),tip:'Live price (10s tick)',
+    cell:t=>usd(q(t,'price',t.feat.priceUsd))},
+  m5:{label:'5m',w:'r',live:1,sort:t=>q(t,'m5',t.feat.priceChange.m5),tip:'5-minute change (live)',
+    cell:t=>{const v=q(t,'m5',t.feat.priceChange.m5);return `<span class="${dirc(v)}">${pc(v)}</span>`}},
+  h1:{label:'1h',w:'r',live:1,sort:t=>q(t,'h1',t.feat.priceChange.h1),tip:'1-hour change (live)',
+    cell:t=>{const v=q(t,'h1',t.feat.priceChange.h1);return `<span class="${dirc(v)}">${pc(v)}</span>`}},
+  h6:{label:'6h',w:'r',live:1,sort:t=>q(t,'h6',t.feat.priceChange.h6),tip:'6-hour change (live)',
+    cell:t=>{const v=q(t,'h6',t.feat.priceChange.h6);return `<span class="${dirc(v)}">${pc(v)}</span>`}},
+  mcap:{label:'MCap',w:'r',live:1,sort:t=>q(t,'mcap',t.feat.mcap),tip:'Market cap (live)',
+    cell:t=>usd(q(t,'mcap',t.feat.mcap))},
+  liq:{label:'Liq',w:'r',live:1,sort:t=>q(t,'liq',t.feat.liqUsd),tip:'Pool liquidity (live)',
+    cell:t=>usd(q(t,'liq',t.feat.liqUsd))},
+  volH1:{label:'Vol 1h',w:'r',live:1,sort:t=>q(t,'volH1',t.feat.volume.h1),tip:'1-hour volume (live)',
+    cell:t=>usd(q(t,'volH1',t.feat.volume.h1))},
+  flow:{label:'Flow 5m',w:'r',live:1,tip:'Buy share of last 5m transactions (live)',
+    sort:t=>{const v=QUOTES[t.feat.mint];return v?v.buys/((v.buys+v.sells)||1):t.feat.buyRatioH1},
+    cell:t=>{const v=QUOTES[t.feat.mint];const r=v?v.buys/((v.buys+v.sells)||1):t.feat.buyRatioH1;
+      return `<span class="${r>0.55?'up':r<0.45?'down':'zero'}">${(r*100).toFixed(0)}%</span>`}},
+  att:{label:'Att',w:'r',sort:t=>t.score.attention,tip:'Attention pillar',
+    cell:t=>`${miniBar(t.score.attention,'var(--s1)')} ${t.score.attention.toFixed(0)}`},
+  mom:{label:'Mom',w:'r',sort:t=>t.score.momentum,tip:'Momentum pillar',
+    cell:t=>`${miniBar(t.score.momentum,'var(--s2)')} ${t.score.momentum.toFixed(0)}`},
+  liqh:{label:'LiqH',w:'r',sort:t=>t.score.liquidityHealth,tip:'Liquidity-health pillar',
+    cell:t=>`${miniBar(t.score.liquidityHealth,'var(--s3)')} ${t.score.liquidityHealth.toFixed(0)}`},
+  risk:{label:'Risk',w:'r',sort:t=>t.score.risk,tip:'Contract/rug risk — higher is worse',
+    cell:t=>`<span class="${t.score.risk>50?'down':t.score.risk>30?'':'zero'}">${t.score.risk.toFixed(0)}</span>`},
+  rvol:{label:'RVol/h',w:'r',sort:t=>t.feat.candles?.realised_vol_60m_pct??-1,
+    tip:'REALISED hourly volatility, measured from candles — not estimated',
+    cell:t=>t.feat.candles?nf(t.feat.candles.realised_vol_60m_pct,1)+'%':'—'},
+  evol:{label:'E[move]',w:'r',sort:t=>t.prediction?.volatility.expected_move_p50??-1,
+    tip:'Forecast typical absolute move over 60m',
+    cell:t=>t.prediction?'&plusmn;'+t.prediction.volatility.expected_move_p50+'%':'—'},
+  pup:{label:'P(up)',w:'r',sort:t=>t.prediction?.p_up??-1,tip:'Forecast probability of an up move',
+    cell:t=>t.prediction?Math.round(t.prediction.p_up*100)+'%':'—'},
+  call:{label:'Call',w:'c',sort:t=>t.prediction?.call==='long'?2:t.prediction?.call==='avoid'?0:1,
+    tip:'Forecast call — the engine declines most of them on purpose',
+    cell:t=>t.prediction?`<span class="pill ${t.prediction.call}">${t.prediction.call}</span>`:'—'},
+  stab:{label:'Stab',w:'r',sort:t=>t.stability?.p_top5??-1,
+    tip:'Share of 200 re-weightings where this stayed top-5. Low means the ranking is the weights talking.',
+    cell:t=>{const v=t.stability?.p_top5;return v==null?'—':`<span class="${v>=0.5?'up':'warn'}" style="color:${v>=0.5?'var(--up)':'var(--warn)'}">${Math.round(v*100)}%</span>`}},
+  hl:{label:'HiLo',w:'r',sort:t=>t.feat.candles?.higher_lows_ratio??-1,
+    tip:'Share of candles making higher lows — absorption vs distribution',
+    cell:t=>t.feat.candles?Math.round(t.feat.candles.higher_lows_ratio*100)+'%':'—'},
+  dd:{label:'MaxDD',w:'r',sort:t=>-(t.feat.candles?.max_drawdown_pct??999),
+    tip:'Deepest pullback inside the candle window',
+    cell:t=>t.feat.candles?nf(t.feat.candles.max_drawdown_pct,1)+'%':'—'},
+  age:{label:'Age',w:'r',sort:t=>t.feat.ageH,tip:'Pool age',
+    cell:t=>t.feat.ageH<1?Math.round(t.feat.ageH*60)+'m':t.feat.ageH<48?t.feat.ageH.toFixed(1)+'h':(t.feat.ageH/24).toFixed(1)+'d'},
+  phase:{label:'Phase',w:'l',sort:t=>t.advice.phase,tip:'Lifecycle phase heuristic',
+    cell:t=>`<span class="nm" style="font-size:11px">${esc(t.advice.phase)}</span>`},
+  sat:{label:'Sat',w:'r',sort:t=>t.feat.fomo?.saturation??-1,
+    tip:'Attention saturation vs tier median. The FOMO curve peaks near 3x and dies past ~8x.',
+    cell:t=>t.feat.fomo?nf(t.feat.fomo.saturation,1)+'x':'—'},
+};
+const TEMPLATES={
+  'Overview':      ['sym','composite','verdict','aura','fomo','price','m5','h1','h6','mcap','liq','age'],
+  'Momentum':      ['sym','composite','price','m5','h1','h6','volH1','flow','mom','sat','phase'],
+  'Durability':    ['sym','aura','auraBand','hl','dd','rvol','h1','h6','volH1','age','phase'],
+  'Forecast':      ['sym','composite','call','pup','evol','rvol','stab','aura','h1'],
+  'Risk':          ['sym','composite','risk','liq','liqh','mcap','age','sat','phase'],
+  'Everything':    Object.keys(COLUMNS),
+};
+const LS='cryptoagent.cols.v1';
+let tplName=localStorage.getItem(LS+'.tpl')||'Overview';
+let custom=JSON.parse(localStorage.getItem(LS)||'null');
+const activeCols=()=>tplName==='Custom'&&custom?custom:(TEMPLATES[tplName]||TEMPLATES.Overview);
+
+function initTpl(){
+  const names=[...Object.keys(TEMPLATES),'Custom'];
+  $('#tpl').innerHTML=names.map(n=>`<option ${n===tplName?'selected':''}>${n}</option>`).join('');
+  $('#tpl').onchange=e=>{tplName=e.target.value;localStorage.setItem(LS+'.tpl',tplName);renderGrid();};
+}
+$('#cols').onclick=()=>{
+  const sel=new Set(activeCols());
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="sheet"><h2 class="serif">Columns</h2><div class="cols">
+    ${Object.entries(COLUMNS).map(([id,c])=>`<label><input type="checkbox" data-id="${id}" ${sel.has(id)?'checked':''}>
+      <span>${c.label}${c.live?' <span style="color:var(--up)">&bull;</span>':''}<small>${esc((c.tip||'').slice(0,58))}</small></span></label>`).join('')}
+    </div><div class="sheetfoot"><button class="go" id="applyCols">Apply as Custom</button>
+    <button class="ui" id="closeCols">Cancel</button>
+    <span class="nm" style="margin-left:auto">&bull; marks columns that update on the 10s tick</span></div></div>`;
+  document.body.appendChild(m);
+  m.querySelector('#closeCols').onclick=()=>m.remove();
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.querySelector('#applyCols').onclick=()=>{
+    custom=[...m.querySelectorAll('input:checked')].map(i=>i.dataset.id);
+    if(!custom.length)custom=['sym','composite'];
+    localStorage.setItem(LS,JSON.stringify(custom));
+    tplName='Custom';localStorage.setItem(LS+'.tpl',tplName);
+    initTpl();renderGrid();m.remove();
+  };
+};
+
+function renderGrid(){
+  const cols=activeCols().filter(id=>COLUMNS[id]);
+  const rows=[...(STATE.tokens||[])];
+  const sc=COLUMNS[SORT.key];
+  if(sc&&sc.sort) rows.sort((a,b)=>{const x=sc.sort(a),y=sc.sort(b);
+    return (typeof x==='string'?x.localeCompare(y):x-y)*SORT.dir;});
+  if(!rows.length){$('#gridwrap').innerHTML='<div class="empty">No scan yet.</div>';return;}
+  $('#gridwrap').innerHTML=`<table class="g"><thead><tr>${cols.map(id=>{
+    const c=COLUMNS[id];
+    return `<th class="${c.w}" data-k="${id}" data-tip="${esc(c.tip||c.label)}">${c.label}${
+      SORT.key===id?` <span class="ar">${SORT.dir>0?'▲':'▼'}</span>`:''}</th>`;}).join('')}</tr></thead>
+    <tbody>${rows.map(t=>`<tr data-mint="${esc(t.feat.mint)}" class="${t.feat.mint===SEL?'sel':''}">
+      ${cols.map(id=>`<td class="${COLUMNS[id].w}" data-col="${id}" data-mint="${esc(t.feat.mint)}">${COLUMNS[id].cell(t)}</td>`).join('')}
+    </tr>`).join('')}</tbody></table>`;
+  $('#gridwrap').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k;
+    SORT = SORT.key===k?{key:k,dir:-SORT.dir}:{key:k,dir:-1};
+    renderGrid();
+  });
+  $('#gridwrap').querySelectorAll('tr[data-mint]').forEach(tr=>tr.onclick=()=>select(tr.dataset.mint));
+  $('#stRows').textContent=rows.length;
+}
+
+/* the 10-second tick: repaint ONLY live cells, and wash the ones that moved so
+   a change is felt rather than merely displayed */
+async function tick(){
+  if(!$('#liveTick').checked) return;
+  try{
+    const r=await fetch('/api/tick').then(x=>x.json());
+    if(!r||!r.quotes) return;
+    PREV=QUOTES; QUOTES=r.quotes;
+    $('#stTick').textContent=new Date(r.ts*1000).toLocaleTimeString('en-GB');
+    const cols=activeCols().filter(id=>COLUMNS[id]&&COLUMNS[id].live);
+    for(const t of STATE.tokens||[]){
+      const now=QUOTES[t.feat.mint], was=PREV[t.feat.mint];
+      if(!now) continue;
+      for(const id of cols){
+        const td=$(`td[data-col="${id}"][data-mint="${CSS.escape(t.feat.mint)}"]`);
+        if(!td) continue;
+        const html=COLUMNS[id].cell(t);
+        if(td.innerHTML===html) continue;
+        td.innerHTML=html;
+        if(was){
+          const dir=(now.price??0)-(was.price??0);
+          td.classList.remove('tu','td');void td.offsetWidth;
+          td.classList.add(dir>=0?'tu':'td');
+        }
+      }
+    }
+    if(SEL&&QUOTES[SEL]) paintSideLive();
+  }catch{}
+}
+setInterval(tick,10000);
+
+function paintSideLive(){
+  const el=$('#sideLive'); if(!el) return;
+  const v=QUOTES[SEL]; if(!v) return;
+  el.innerHTML=`<div class="kv"><div>Price</div><div>$${usd(v.price)}</div>
+    <div>5m</div><div class="${dirc(v.m5)}">${pc(v.m5)}</div>
+    <div>1h</div><div class="${dirc(v.h1)}">${pc(v.h1)}</div>
+    <div>Liquidity</div><div>$${usd(v.liq)}</div>
+    <div>5m flow</div><div>${Math.round(v.buys/((v.buys+v.sells)||1)*100)}% buys</div></div>`;
+}
+
+function select(mint){
+  SEL=mint; $('#panes').classList.add('open');
+  renderGrid(); renderSide();
+}
+
+function renderSide(){
+  const t=(STATE.tokens||[]).find(x=>x.feat.mint===SEL);
+  if(!t){$('#side').innerHTML='';return;}
+  const f=t.feat,s=t.score,a=t.advice,p=t.prediction,au=t.aura,fo=f.fomo;
+  $('#side').innerHTML=`<div class="pad">
+    <div class="hero"><div class="big">${s.composite.toFixed(0)}</div>
+      <div><div class="sym" style="font-size:19px">${esc(f.symbol||'?')}</div>
+      <div class="nm">${esc(f.name||'')} &middot; <a href="${esc(f.url)}" target="_blank" rel="noopener" style="color:var(--gold)">chart &#8599;</a></div></div>
+      ${au?`<div style="margin-left:auto;text-align:right"><div class="aura ${au.band}" style="font-size:30px">${au.points}</div>
+        <div class="nm">AURA &middot; ${au.band}</div></div>`:''}</div>
+
+    <h3>Live</h3><div id="sideLive"><div class="nm">waiting for tick&hellip;</div></div>
+
+    ${au?`<h3>Aura — next ${au.horizon_minutes/60} hours</h3>
+      <div class="nm" style="margin-bottom:6px">Coverage ${au.coverage}% ${au.coverage<50?'(too thin to call)':''}</div>
+      ${Object.entries(au.components).filter(([,v])=>v!=null).map(([k,v])=>
+        `<div style="display:grid;grid-template-columns:104px 1fr 28px;gap:8px;align-items:center;margin:3px 0">
+          <span class="nm">${k.replace(/([A-Z])/g,' $1')}</span>${miniBar(v,'var(--s4)')}
+          <span style="font-family:var(--mono);font-size:11px;text-align:right">${v}</span></div>`).join('')}
+      ${au.notes.map(n=>`<div class="why">${esc(n)}</div>`).join('')}`:''}
+
+    ${p?`<h3>Forecast — 60m</h3><div class="why" style="border-color:var(--gold)">
+      ${p.call==='pass'?'No read — declining to call this one.'
+        :`${p.call==='long'?'Up':'Down'}. P(up) ${Math.round(p.p_up*100)}%, expected move &plusmn;${p.volatility.expected_move_p50}% (tail &plusmn;${p.volatility.expected_move_p90}%).`}</div>
+      <ul>${(p.chain||[]).slice(0,4).map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`:''}
+
+    ${fo?`<h3>Crowd</h3>${fo.macro?`<div class="why">${esc(fo.macro.note)}</div>`:''}
+      ${fo.reasons.slice(0,3).map(r=>`<div class="why">${esc(r)}</div>`).join('')}`:''}
+
+    <h3>${esc(a.phase)}</h3><div class="nm" style="line-height:1.6">${esc(a.phase_note)}</div>
+    <h3>Risks</h3><ul>${(a.risks||[]).slice(0,4).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>Invalidation</h3><ul>${(a.invalidation||[]).slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+  </div>`;
+  paintSideLive();
+}
+
+const LAYERS=[['Layer 0','Macro'],['Layer 1','Cohort'],['Layer 2','Structure'],
+              ['Layer 3','Crowd'],['Layer 4','Social'],['Layer 5','Forecast']];
 function renderRail(){
-  const t=STATE.tokens||[], fo=t[0]&&t[0].feat.fomo;
+  const t=STATE.tokens||[],fo=t[0]&&t[0].feat.fomo;
   const dir=t.filter(x=>x.prediction&&x.prediction.call!=='pass').length;
+  const endur=t.filter(x=>x.aura&&x.aura.points>=65).length;
   const vals=[
-    MACRO&&MACRO.available
-      ? `${MACRO.regime} &middot; ${(MACRO.lead_symbol||'').split('-')[0]} ${MACRO.lead_change_pct>=0?'+':''}${(MACRO.lead_change_pct||0).toFixed(1)}%`
-      : 'no EODHD key &mdash; using cohort breadth',
-    t.length?`${t.length} tokens passed filters`:'—',
-    t.length?`${t.filter(x=>x.score.risk<40).length} of ${t.length} low contract risk`:'—',
-    fo?`${fo.regime} &middot; ${Math.round(fo.breadth*100)}% green`:'—',
-    'channels polled each scan',
-    t.length?`${dir}/${t.length} directional`:'—',
-  ];
-  const st=[
-    MACRO&&MACRO.available?'var(--good)':'var(--muted)',
-    t.length?'var(--good)':'var(--muted)',
-    t.length?'var(--good)':'var(--muted)',
-    fo?'var(--good)':'var(--muted)','var(--good)',
-    dir?'var(--good)':'var(--warn)',
-  ];
-  $('#rail').innerHTML=LAYERS.map((l,i)=>`<div class="lay" data-tip="${l.tip}">
-    <span class="st" style="background:${st[i]}"></span>
-    <div class="n">${l.n}</div><div class="t">${l.t}</div><div class="v">${vals[i]}</div></div>`).join('');
+    MACRO&&MACRO.available?`${MACRO.regime} ${(MACRO.lead_change_pct||0).toFixed(1)}%`:'no EODHD key',
+    `${t.length} tokens`, `${t.filter(x=>x.score.risk<40).length} low risk`,
+    fo?`${fo.regime} ${Math.round(fo.breadth*100)}% green`:'—',
+    `${endur} enduring`, `${dir} directional`];
+  const st=[MACRO&&MACRO.available?'var(--up)':'var(--muted)','var(--up)','var(--up)',
+    fo?'var(--up)':'var(--muted)',endur?'var(--up)':'var(--warn)',dir?'var(--up)':'var(--warn)'];
+  $('#rail').innerHTML=LAYERS.map((l,i)=>`<div class="lay"><span class="st" style="background:${st[i]}"></span>
+    <div class="n">${l[0]}</div><div class="t">${l[1]}</div><div class="v">${vals[i]}</div></div>`).join('');
+  $('#stRegime').textContent=MACRO&&MACRO.available?MACRO.regime:'n/a';
+}
+
+async function loadAll(){
+  const [d,m,s]=await Promise.all([
+    fetch('/api/tokens').then(r=>r.json()).catch(()=>null),
+    fetch('/api/regime').then(r=>r.json()).catch(()=>null),
+    fetch('/api/status').then(r=>r.json()).catch(()=>({}))]);
+  if(d)STATE=d; MACRO=m;
+  renderRail(); renderGrid(); if(SEL) renderSide();
+  $('#stScan').textContent=STATE.ts?new Date(STATE.ts*1000).toLocaleTimeString('en-GB'):'—';
+  $('#stMsg').innerHTML=s.lastError?`<span style="color:var(--down)">${esc(s.lastError)}</span>`:'';
+  $('#scan').disabled=!!s.running;
+  tick();
 }
 
 function connect(){
   const es=new EventSource('/api/stream');
   es.addEventListener('hello',()=>$('#pulse').classList.add('on'));
-  es.addEventListener('beat',e=>{ try{$('#scan').disabled=!!JSON.parse(e.data).running;}catch{} });
-  es.addEventListener('scan',()=>loadAll(true));
-  es.onerror=()=>{ $('#pulse').classList.remove('on'); es.close(); setTimeout(connect,5000); };
+  es.addEventListener('beat',e=>{try{$('#scan').disabled=!!JSON.parse(e.data).running}catch{}});
+  es.addEventListener('scan',()=>loadAll());
+  es.onerror=()=>{$('#pulse').classList.remove('on');es.close();setTimeout(connect,5000);};
 }
 
-async function loadAll(flash){
-  const [d,m,s]=await Promise.all([
-    fetch('/api/tokens').then(r=>r.json()).catch(()=>null),
-    fetch('/api/regime').then(r=>r.json()).catch(()=>null),
-    fetch('/api/status').then(r=>r.json()).catch(()=>({}))]);
-  if(d) STATE=d;
-  MACRO=m;
-  renderRail(); renderList();
-  const t=(STATE.tokens||[]).find(x=>x.feat.mint===SEL); if(t) renderDetail(t);
-  $('#status').innerHTML=(STATE.ts?'scan '+new Date(STATE.ts*1000).toLocaleTimeString():'idle')
-    +(s.agentsEnabled?' &middot; panel on':' &middot; rule-based')
-    +(s.lastError?` &middot; <span style="color:var(--critical)">${esc(s.lastError)}</span>`:'');
-  if(flash){ const el=$('#list'); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
-  if(!$('#fcView').hidden) loadForecast();
-  if(!$('#tgView').hidden) loadTelegram();
-  if(!$('#scoreView').hidden) loadScorecard();
-}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  VIEW=b.dataset.v;
+  if(VIEW==='Radar'){ $('#panes').hidden=false; $('#rail').hidden=false; renderGrid(); }
+  else { $('#panes').hidden=false; $('#rail').hidden=false; renderOther(); }
+});
 
-function renderList(){
-  const ts=STATE.tokens||[];
-  if(!ts.length) return;
-  $('#scanMeta').textContent=`${ts.length} tokens`;
-  $('#list').innerHTML=ts.map(t=>{
-    const s=t.score,f=t.feat,fo=f.fomo;
-    return `<div class="row ${f.mint===SEL?'sel':''}" data-mint="${esc(f.mint)}">
-      <div><div class="tick">${esc(f.symbol||'?')}</div><div class="tname">${esc(f.name||'')}</div></div>
-      <div><div class="comp num">${s.composite.toFixed(0)}</div><div class="verd ${s.verdict}">${s.verdict}</div></div>
-      <div class="bars">
-        ${bar('att',s.attention,'var(--s1)','Attention &mdash; boost, socials, transaction velocity')}
-        ${bar('mom',s.momentum,'var(--s2)','Momentum &mdash; price and volume acceleration')}
-        ${bar('liq',s.liquidityHealth,'var(--s3)','Liquidity health &mdash; depth, liq/mcap, turnover')}
-        ${bar('fomo',s.fomo,'var(--s4)','FOMO &mdash; crowd psychology, gated by the macro tape')}
-      </div>
-      <div>${fo?dial(fo.fomo,62):''}</div>
-      <div><div class="chg num ${cls(f.priceChange.h1)}">${pct(f.priceChange.h1)}</div>
-        <div class="sub num">${fmtUsd(f.mcap)}</div></div></div>`;}).join('');
-  $('#list').querySelectorAll('[data-mint]').forEach(el=>el.onclick=()=>{
-    SEL=el.dataset.mint; renderList();
-    const t=STATE.tokens.find(x=>x.feat.mint===SEL); if(t) renderDetail(t);
-  });
-}
-
-const list=a=>a&&a.length?'<ul>'+a.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':'<p class="sub">none</p>';
-
-function agentCard(id,a,extra){
-  if(!a) return '';
-  if(a.error) return `<div class="agent ${extra||''}"><span class="who">${esc(id)}</span> <span class="sub">error: ${esc(a.error)}</span></div>`;
-  if(a.skipped) return `<div class="agent ${extra||''}"><span class="who">${esc(id)}</span> <span class="sub">skipped &mdash; ${esc(a.skipped)}</span></div>`;
-  return `<div class="agent ${extra||''}"><div class="top"><span class="who">${esc(id)}</span>
-      <span class="call ${esc(a.call)}">${esc(a.call)}</span>
-      <span class="sub">${esc(a.predicted_direction)} &middot; ${a.horizon_minutes}m &middot; ${Math.round((a.conviction||0)*100)}%</span></div>
-    ${a.one_liner?`<p style="margin:5px 0">${esc(a.one_liner)}</p>`:''}
-    <p style="margin:5px 0;color:var(--ink-2)">${esc(a.reasoning)}</p>
-    ${a.bear_case?`<p style="margin:5px 0;color:#f0b9b4">Bear: ${esc(a.bear_case)}</p>`:''}
-    ${a.exit_trigger?`<p style="margin:5px 0">Exit: ${esc(a.exit_trigger)}</p>`:''}</div>`;
-}
-function panelHtml(p){
-  if(!p) return `<div class="grp"><h3>Agent panel</h3><p class="sub">Not promoted this scan &mdash; the composite
-    didn't clear the gate, or the feature vector hadn't moved enough since the last read to be worth re-asking.</p></div>`;
-  const ag=p.agents||{},order=['arbiter','redteam','microstructure','narrative','forensics'];
-  const calls=order.filter(k=>ag[k]&&ag[k].call).map(k=>ag[k].call);
-  const split=new Set(calls).size>1;
-  return `<div class="grp"><h3>Agent panel &mdash; ${esc(p.promotedBecause)} &middot; $${(p.cost||0).toFixed(4)}</h3>
-    ${split?'<p class="sub" style="color:var(--warn)">Panel is split &mdash; disagreement is the signal.</p>':''}
-    <div class="${split?'split':''}">${order.map(k=>agentCard(k,ag[k],k==='arbiter'?'arb':'')).join('')}</div></div>`;
-}
-const FOMO_LABELS={gainVelocity:'Gain velocity',secondChance:'Second chance',attentionSweet:'Attention sweet spot',
-  attentionShare:'Share of crowd',athProximity:'Near its high',milestone:'Milestone',narrativeRoom:'Narrative room'};
-
-async function renderDetail(t){
-  const f=t.feat,s=t.score,a=t.advice,panel=t.panel,p=t.prediction,st=t.stability,fo=f.fomo;
-  const hist=await fetch('/api/history/'+encodeURIComponent(f.mint)).then(r=>r.json()).catch(()=>[]);
-  const comp=fo?Object.entries(fo.components).map(([k,v])=>
-    `<div class="bl" style="grid-template-columns:130px 1fr 30px"><b style="text-transform:none;font-size:12.5px;color:var(--ink-2);letter-spacing:0">${FOMO_LABELS[k]||k}</b>
-     <div class="track"><i style="width:${v==null?0:Math.max(1.5,v*100)}%;background:${v==null?'var(--grid)':'var(--s4)'}"></i></div>
-     <u class="num">${v==null?'—':Math.round(v*100)}</u></div>`).join(''):'';
-
-  $('#detail').innerHTML=`<div class="detail">
-    <div class="hero"><div><div class="big num">${s.composite.toFixed(0)}</div>
-      <div class="lbl">${s.verdict}${s.percentile!=null?` &middot; p${s.percentile}`:''}</div></div>
-      <div style="margin-left:auto">${fo?dial(fo.fomo):''}</div></div>
-    <div style="font-size:20px">${esc(f.symbol||'?')} <span class="sub">${esc(f.name||'')}</span></div>
-    <div class="sub">${esc(f.dex||'')} &middot; <a href="${esc(f.url)}" target="_blank" rel="noopener">DEX Screener &#8599;</a></div>
-
-    ${p?`<div class="grp"><h3>Forecast</h3><div class="pred">
-      <div class="stmt">${p.call==='pass'?'No read &mdash; declining to call this one.'
-        :`${p.call==='long'?'Up':'Down'} over the next ${p.horizon_minutes} minutes. P(up) ${Math.round(p.p_up*100)}%, expected move &plusmn;${p.volatility.expected_move_p50}%.`}</div>
-      ${volBand(p.volatility)}
-      <div class="sub" style="display:flex;justify-content:space-between;margin-top:4px">
-        <span>&minus;${p.volatility.expected_move_p90}%</span><span>typical &plusmn;${p.volatility.expected_move_p50}%</span><span>+${p.volatility.expected_move_p90}%</span></div>
-      <ul style="margin-top:10px">${(p.chain||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul>
-      <p class="sub" style="margin-top:8px">Survives re-weighting in
-        <b style="color:${(st&&st.p_top5||0)>=.5?'var(--good)':'var(--warn)'}">${Math.round((st&&st.p_top5||0)*100)}%</b>
-        of ${st&&st.passes||0} bootstraps (median rank ${st&&st.median_rank||'—'}).</p></div></div>`:''}
-
-    <div class="grp"><h3>Score history</h3>${sparkline(hist.map(h=>h.composite))}</div>
-    ${fo?`<div class="grp"><h3>What is driving the crowd</h3><div class="bars">${comp}</div>
-      ${fo.macro?`<div class="why">Macro: ${esc(fo.macro.note)}</div>`:''}
-      ${fo.reasons.map(r=>`<div class="why">${esc(r)}</div>`).join('')}</div>`:''}
-
-    <div class="grp"><h3>Metrics</h3><div class="kv num">
-      <div>Price</div><div>${fmtUsd(f.priceUsd)}</div>
-      <div>Liquidity</div><div>${fmtUsd(f.liqUsd)}</div>
-      <div>Market cap</div><div>${fmtUsd(f.mcap)}</div>
-      <div>Liq / mcap</div><div>${(f.liqMcapRatio*100).toFixed(1)}%</div>
-      <div>Age</div><div>${f.ageH<1?Math.round(f.ageH*60)+'m':f.ageH.toFixed(1)+'h'}</div>
-      <div>5m / 1h / 6h</div><div><span class="${cls(f.priceChange.m5)}">${pct(f.priceChange.m5)}</span> &middot;
-        <span class="${cls(f.priceChange.h1)}">${pct(f.priceChange.h1)}</span> &middot;
-        <span class="${cls(f.priceChange.h6)}">${pct(f.priceChange.h6)}</span></div>
-      <div>Vol 1h / 24h</div><div>${fmtUsd(f.volume.h1)} &middot; ${fmtUsd(f.volume.h24)}</div>
-      <div>1h buy flow</div><div>${(f.buyRatioH1*100).toFixed(0)}% buys</div>
-      <div>24h turnover</div><div>${f.turnoverH24.toFixed(1)}&times; liq</div>
-      ${fo?`<div>Attention saturation</div><div>${fo.saturation}&times; tier median</div>`:''}
-    </div></div>
-
-    <div class="grp"><h3>${esc(a.phase)} &mdash; confidence ${esc(a.confidence)}</h3>
-      <p style="color:var(--ink-2)">${esc(a.phase_note)}</p></div>
-    <div class="grp"><h3>Thesis</h3>${list(a.thesis)}</div>
-    <div class="grp risk"><h3>Risks</h3>${list(a.risks)}</div>
-    <div class="grp"><h3>Invalidation</h3>${list(a.invalidation)}</div>
-    ${panelHtml(panel)}
-    <div class="grp"><h3>Notes</h3><textarea id="note">${esc(t.note||'')}</textarea>
-      <button class="ghost" id="saveNote" style="margin-top:8px">Save</button></div></div>`;
-
-  $('#saveNote').onclick=async()=>{
-    await fetch('/api/note/'+encodeURIComponent(f.mint),{method:'POST',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({note:$('#note').value})});
-    $('#saveNote').textContent='Saved'; setTimeout(()=>$('#saveNote').textContent='Save',1200);
-  };
-}
-
-function loadForecast(){
-  const rows=(STATE.tokens||[]).filter(t=>t.prediction);
-  $('#fcWrap').innerHTML=rows.length?`<div class="note">
-    Direction over an hour is close to a coin flip, so the engine mostly declines it.
-    <b>Size is the forecastable part</b> &mdash; the band is the expected absolute move
-    (dark = typical, light = tail), and the ledger grades whether reality landed inside it.
-    </div><div class="scroll"><table><thead><tr><th>Token</th><th>Call</th><th>P(up)</th>
-    <th style="text-align:left;min-width:150px">Expected move</th><th>p50</th><th>p90</th>
-    <th>Stability</th><th style="text-align:left">Lead observation</th></tr></thead><tbody>
-    ${rows.map(t=>{const p=t.prediction,st=t.stability,ok=(st&&st.p_top5||0)>=.5;return `<tr>
-      <td>${esc(t.feat.symbol||'?')}</td><td><span class="call ${esc(p.call)}">${esc(p.call)}</span></td>
-      <td class="num">${Math.round(p.p_up*100)}%</td><td>${volBand(p.volatility)}</td>
-      <td class="num">&plusmn;${p.volatility.expected_move_p50}%</td>
-      <td class="num sub">&plusmn;${p.volatility.expected_move_p90}%</td>
-      <td class="num" style="color:${ok?'var(--good)':'var(--warn)'}">${Math.round((st&&st.p_top5||0)*100)}%</td>
-      <td style="text-align:left" class="sub">${esc((p.chain||[])[0]||'—')}</td></tr>`;}).join('')}
-    </tbody></table></div>`:'<div class="empty">No forecasts yet.</div>';
-}
-
-function edgeCell(e){
-  if(!e||e.verdict==='insufficient-data') return `<span class="sub">needs ${e&&e.need||8} graded calls</span>`;
-  const col={inference:'var(--good)','insider-suspected':'var(--critical)',mixed:'var(--warn)','no-edge':'var(--muted)'}[e.verdict]||'var(--muted)';
-  return `<b style="color:${col}">${esc(e.verdict)}</b><br><span class="sub">${esc((e.note||'').slice(0,95))}</span>`;
-}
-async function loadTelegram(){
-  const [tg,sc,edge]=await Promise.all([
-    fetch('/api/telegram').then(r=>r.json()).catch(()=>null),
-    fetch('/api/scorecard').then(r=>r.json()).catch(()=>null),
-    fetch('/api/edge').then(r=>r.json()).catch(()=>({}))]);
-  if(!tg) return;
-  const chans=Object.entries((sc&&sc.agents)||{}).filter(([id])=>id.startsWith('tg:'));
-  $('#tgScore').innerHTML=chans.length?`<div class="scroll"><table><thead><tr><th>Channel</th><th>Calls</th>
-    <th>Graded</th><th>Hit</th><th>Long EV</th><th>Status</th><th style="text-align:left">Edge source</th>
-    </tr></thead><tbody>${chans.map(([id,a])=>`<tr><td>${esc(id.slice(3))}</td>
-      <td class="num">${a.n_calls}</td><td class="num">${a.n_graded||0}</td>
-      <td class="num">${a.hit_rate==null?'<span class="sub">—</span>':`<b style="color:${a.hit_rate>=.5?'var(--good)':'var(--critical)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
-      <td class="num">${!a.longs||a.longs.expectancy_pct==null?'—':`<span class="${a.longs.expectancy_pct>0?'up':'down'}">${pct(a.longs.expectancy_pct)}</span>`}</td>
-      <td>${a.n_graded?(a.unproven?'<span class="sub">unproven</span>':'<span class="beats">proven</span>'):'<span class="sub">no history</span>'}</td>
-      <td style="text-align:left">${edgeCell(edge[id.slice(3)])}</td></tr>`).join('')}</tbody></table></div>`
-    :`<div class="note">Five channels are polled each scan. A channel appears here once it makes an
-      extractable call &mdash; a ticker or contract address carrying buy or exit intent. News channels
-      post no calls and will stay empty, which is itself the correct answer.</div>`;
-  $('#tgFeed').innerHTML=tg.calls&&tg.calls.length?`<div class="scroll"><table><thead><tr><th>When</th>
-    <th>Channel</th><th>Token</th><th>Call</th><th>Outcome</th><th style="text-align:left">Message</th>
-    </tr></thead><tbody>${tg.calls.map(c=>`<tr><td class="num sub">${new Date(c.ts*1000).toLocaleTimeString()}</td>
-      <td class="sub">${esc(c.channel)}</td><td>${esc(c.symbol||'?')}</td>
-      <td><span class="call ${esc(c.call)}">${esc(c.call)}</span></td>
-      <td class="num">${c.outcome?`<span class="${c.outcome.return_pct>0?'up':'down'}">${pct(c.outcome.return_pct)}</span>`:'<span class="sub">open</span>'}</td>
-      <td style="text-align:left;max-width:340px" class="sub">${esc((c.text||'').slice(0,110))}</td></tr>`).join('')}
-    </tbody></table></div>`:'<div class="empty">No calls logged yet.</div>';
-}
-
-async function loadScorecard(){
-  const sc=await fetch('/api/scorecard').then(r=>r.json()).catch(()=>null);
-  if(!sc) return;
-  const t=sc.totals;
-  $('#scoreWrap').innerHTML=`<div class="note">${t.predictions} predictions &middot; ${t.graded} graded &middot;
-    ${t.open} open &middot; spend $${t.spend_usd.toFixed(4)}<br>Hit rate covers <b>directional calls only</b> &mdash;
-    a &ldquo;pass&rdquo; is a decision not to participate, not a forecast. Dead band scales with horizon
-    (15m &plusmn;8%, 60m &plusmn;18%, 6h &plusmn;35%).</div><div class="scroll"><table><thead><tr><th>Agent</th>
-    <th>Graded</th><th>Dir</th><th>Hit</th><th>Brier</th><th>Longs</th><th>Long EV</th><th>Passed OK</th>
-    <th>Missed</th><th>vs base</th></tr></thead><tbody>${Object.entries(sc.agents).map(([id,a])=>{
+async function renderOther(){
+  const wrap=$('#gridwrap'); $('#panes').classList.remove('open');
+  wrap.innerHTML='<div class="empty">loading&hellip;</div>';
+  if(VIEW==='Score'){
+    const sc=await fetch('/api/scorecard').then(r=>r.json()).catch(()=>null); if(!sc)return;
+    wrap.innerHTML=`<div class="note">${sc.totals.predictions} predictions &middot; ${sc.totals.graded} graded &middot;
+      ${sc.totals.open} open. Hit rate covers <b>directional calls only</b> — a pass is a decision not to
+      participate, not a forecast.</div><table class="g"><thead><tr><th class="l">Agent</th><th class="r">Graded</th>
+      <th class="r">Dir</th><th class="r">Hit</th><th class="r">Brier</th><th class="r">Long EV</th>
+      <th class="r">vs base</th></tr></thead><tbody>${Object.entries(sc.agents).map(([id,a])=>{
       const vb=sc.vs_baseline[id];
-      return `<tr><td>${esc(id)}${a.n_graded&&a.unproven?'<br><span class="sub">unproven</span>':''}</td>
-      <td class="num">${a.n_graded||0}<span class="sub">/${a.n_calls}</span></td><td class="num">${a.n_directional||0}</td>
-      <td class="num">${a.hit_rate==null?'<span class="sub">no dir. calls</span>':`<b style="color:${a.hit_rate>=.5?'var(--good)':'var(--critical)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
-      <td class="num">${a.brier==null?'—':a.brier}</td><td class="num">${a.longs&&a.longs.n||0}</td>
-      <td class="num">${!a.longs||a.longs.expectancy_pct==null?'—':`<span class="${a.longs.expectancy_pct>0?'up':'down'}">${pct(a.longs.expectancy_pct)}</span>`}</td>
-      <td class="num">${!a.passes||a.passes.avoided_loss==null?'—':Math.round(a.passes.avoided_loss*100)+'%'}</td>
-      <td class="num">${!a.passes||a.passes.missed_gain_pct==null?'—':`<span style="color:var(--warn)">${pct(a.passes.missed_gain_pct)}</span>`}</td>
-      <td class="num">${vb?(vb.beats_baseline?`<span class="beats">+${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`:`<span class="loses">${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`):(id==='baseline_rules'?'<span class="sub">benchmark</span>':'—')}</td>
-      </tr>`;}).join('')}</tbody></table></div>`;
-  const open=await fetch('/api/ledger/open').then(r=>r.json()).catch(()=>[]);
-  $('#openWrap').innerHTML=open.length?`<div class="scroll"><table><thead><tr><th>Token</th><th>Agent</th>
-    <th>Call</th><th>Conv</th><th>Grades in</th></tr></thead><tbody>${open.slice(0,60).map(o=>`<tr>
-      <td>${esc(o.symbol||'?')}</td><td class="sub">${esc(o.agent)}</td>
-      <td><span class="call ${esc(o.call)}">${esc(o.call)}</span></td>
-      <td class="num">${Math.round((o.conviction||0)*100)}%</td>
-      <td class="num sub">${Math.max(0,Math.round(o.seconds_left/60))}m</td></tr>`).join('')}
-    </tbody></table></div>`:'<div class="empty">Nothing in flight.</div>';
-}
-
-async function loadAdapt(){
-  const a=await fetch('/api/adapt').then(r=>r.json()).catch(()=>null);
-  if(!a) return;
-  const rows=(a.ranked||[]).map(r=>`<tr><td>${esc(r.feature)} <span class="sub">${esc(r.pillar)}</span></td>
-    <td class="num">${r.n}</td><td style="text-align:left;min-width:130px"
-      data-tip="IC ${r.ic} vs significance threshold &plusmn;${r.threshold}">
-      <div style="display:flex;align-items:center;gap:7px"><div class="track" style="flex:1">
-      <i style="width:${Math.min(1,Math.abs(r.ic)/0.4)*100}%;background:${r.ic>0?'var(--s3)':'var(--critical)'}"></i></div>
-      <span class="num" style="width:46px;text-align:right">${r.ic>0?'+':''}${r.ic}</span></div></td>
-    <td>${r.significant?'<span class="beats">signal</span>':'<span class="sub">noise</span>'}</td></tr>`).join('');
-  $('#adaptWrap').innerHTML=`<div class="note">Spearman rank correlation between each feature at entry and
-    the return that followed &mdash; rank, not Pearson, because one 40&times; would otherwise set every weight.
-    A feature is only <b>signal</b> when |IC| clears &plusmn;2/&radic;n.
-    ${a.enough_data?`Shrinkage &lambda; ${a.shrinkage_lambda}.`:`<b style="color:var(--warn)">Not enough data:
-    ${a.n_samples}/${a.min_samples} graded samples on model ${esc(a.model_version||'—')}.</b>`}
-    Nothing auto-applies.</div>${rows?`<div class="scroll"><table><thead><tr><th>Feature</th><th>n</th>
-    <th style="text-align:left">Information coefficient</th><th>Verdict</th></tr></thead><tbody>${rows}</tbody></table></div>`
-    :'<div class="empty">No graded samples carrying a feature vector yet.</div>'}`;
-}
-
-function show(w){
-  for(const pair of [['tabRadar','#radarView'],['tabFc','#fcView'],['tabTg','#tgView'],
-                     ['tabScore','#scoreView'],['tabAdapt','#adaptView']]){
-    const on=pair[0]==='tab'+w; $('#'+pair[0]).classList.toggle('on',on); $(pair[1]).hidden=!on;
+      return `<tr><td class="l">${esc(id)}</td><td class="r">${a.n_graded||0}</td>
+        <td class="r">${a.n_directional||0}</td>
+        <td class="r">${a.hit_rate==null?'<span class="zero">—</span>':`<span class="${a.hit_rate>=.5?'up':'down'}">${Math.round(a.hit_rate*100)}%</span>`}</td>
+        <td class="r">${a.brier==null?'—':a.brier}</td>
+        <td class="r">${!a.longs||a.longs.expectancy_pct==null?'—':`<span class="${a.longs.expectancy_pct>0?'up':'down'}">${pc(a.longs.expectancy_pct)}</span>`}</td>
+        <td class="r">${vb?(vb.beats_baseline?`<span class="up">+${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`:`<span class="down">${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`):'<span class="zero">bench</span>'}</td></tr>`;
+      }).join('')}</tbody></table>`;
+  } else if(VIEW==='Tg'){
+    const [tg,edge]=await Promise.all([fetch('/api/telegram').then(r=>r.json()).catch(()=>null),
+      fetch('/api/edge').then(r=>r.json()).catch(()=>({}))]);
+    wrap.innerHTML=`<div class="note">Channels are graded like any other agent. <b>Edge source</b> asks the
+      question that matters: were the winning calls made while the tape was already moving (inference,
+      followable) or while it was flat (they knew first — you would be exit liquidity)?</div>
+      ${tg&&tg.calls&&tg.calls.length?`<table class="g"><thead><tr><th class="l">When</th><th class="l">Channel</th>
+      <th class="l">Token</th><th class="c">Call</th><th class="r">Outcome</th><th class="l">Message</th></tr></thead>
+      <tbody>${tg.calls.map(c=>`<tr><td class="l">${new Date(c.ts*1000).toLocaleTimeString('en-GB')}</td>
+        <td class="l">${esc(c.channel)}</td><td class="l sym">${esc(c.symbol||'?')}</td>
+        <td class="c"><span class="pill ${esc(c.call)}">${esc(c.call)}</span></td>
+        <td class="r">${c.outcome?`<span class="${c.outcome.return_pct>0?'up':'down'}">${pc(c.outcome.return_pct)}</span>`:'<span class="zero">open</span>'}</td>
+        <td class="l nm">${esc((c.text||'').slice(0,90))}</td></tr>`).join('')}</tbody></table>`
+      :'<div class="empty">No channel calls logged yet — the five wired channels post news, not calls.</div>'}`;
+  } else if(VIEW==='Adapt'){
+    const a=await fetch('/api/adapt').then(r=>r.json()).catch(()=>null); if(!a)return;
+    wrap.innerHTML=`<div class="note">Spearman rank correlation between each feature at entry and the return
+      that followed. A feature is <b>signal</b> only when |IC| clears &plusmn;2/&radic;n.
+      ${a.enough_data?'':`<b style="color:var(--warn)">Not enough data: ${a.n_samples}/${a.min_samples} samples.</b>`}</div>
+      ${(a.ranked||[]).length?`<table class="g"><thead><tr><th class="l">Feature</th><th class="l">Pillar</th>
+      <th class="r">n</th><th class="r">IC</th><th class="c">Verdict</th></tr></thead><tbody>
+      ${a.ranked.map(r=>`<tr><td class="l">${esc(r.feature)}</td><td class="l nm">${esc(r.pillar)}</td>
+        <td class="r">${r.n}</td><td class="r"><span class="${r.ic>0?'up':'down'}">${r.ic>0?'+':''}${r.ic}</span></td>
+        <td class="c">${r.significant?'<span class="up">signal</span>':'<span class="zero">noise</span>'}</td></tr>`).join('')}
+      </tbody></table>`:'<div class="empty">No graded samples with feature vectors yet.</div>'}`;
+  } else if(VIEW==='Fc'){
+    tplName='Forecast'; initTpl(); renderGrid();
   }
-  if(w==='Fc') loadForecast();
-  if(w==='Tg') loadTelegram();
-  if(w==='Score') loadScorecard();
-  if(w==='Adapt') loadAdapt();
 }
-$('#tabRadar').onclick=()=>show('Radar'); $('#tabFc').onclick=()=>show('Fc');
-$('#tabTg').onclick=()=>show('Tg'); $('#tabScore').onclick=()=>show('Score');
-$('#tabAdapt').onclick=()=>show('Adapt');
-$('#scan').onclick=async()=>{ $('#scan').disabled=true; await fetch('/api/scan',{method:'POST'}); };
 
-loadAll(); connect();
+$('#scan').onclick=async()=>{$('#scan').disabled=true;await fetch('/api/scan',{method:'POST'});};
+initTpl(); loadAll(); connect();
 </script>
 </body>
 </html>

@@ -10,6 +10,9 @@ import * as adapt from "./adapt.mjs";
 import { pollChannels } from "./telegram/calls.mjs";
 import { runPredictions } from "./predict.mjs";
 import * as regime from "./regime.mjs";
+import { sourceStamp, restartIfSourceChanged } from "./reload.mjs";
+import * as ohlcv from "./ohlcv.mjs";
+import { computeAura, auraPrediction } from "./aura.mjs";
 import { buildFeatures } from "./features.mjs";
 import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
@@ -114,6 +117,30 @@ export async function runScan({ cfg, verbose = true } = {}) {
   // --- pass 4: prediction. Commit to a falsifiable claim BEFORE being asked,
   // then let the market answer it. Ranks are bootstrapped so an unstable top
   // slot is reported as unstable rather than dressed up as a call.
+  // --- AURA: durability, from real candles rather than summary windows. ---
+  if (cfg.aura?.enabled) {
+    const top = rows.slice(0, cfg.aura.candleTopN ?? 12).filter((r) => r.feat.pairAddress);
+    ohlcv.resetStats();
+    const candles = await ohlcv.getMany(top.map((r) => r.feat.pairAddress), {
+      aggregate: cfg.aura.candleAggregateMinutes ?? 15, limit: cfg.aura.candleLimit ?? 24 });
+    for (const r of rows) {
+      const cs = ohlcv.analyse(candles.get(r.feat.pairAddress));
+      r.feat.candles = cs ? { ...cs, closes: undefined } : null;
+      r.aura = computeAura(r.feat, cs);
+      if (cfg.aura.logPredictions) {
+        const ap = auraPrediction(r.feat, r.aura);
+        if (ap) ledger.record({ agent: 'aura', model: 'candle-structure', cost: 0,
+          phase: r.advice.phase, feat: r.feat, score: r.score, pred: ap,
+          extra: { aura: r.aura.points, aura_components: r.aura.components } });
+      }
+    }
+    if (verbose) {
+      const c = ohlcv.coverage();
+      const enduring = rows.filter((r) => r.aura?.points >= 65).length;
+      console.log(`[aura] ${enduring}/${rows.length} enduring (candles: ${c.calls} fetched, ${c.misses} unavailable)`);
+    }
+  }
+
   if (cfg.predict?.enabled) {
     const { horizon } = runPredictions(rows, cfg);
     if (cfg.predict.logForecasts) {
@@ -171,6 +198,7 @@ export async function runScan({ cfg, verbose = true } = {}) {
 export async function loop(cfg) {
   cfg = cfg || loadConfig();
   const interval = cfg.scan.intervalSeconds * 1000;
+  const stamp = sourceStamp();
   for (;;) {
     try {
       await runScan({ cfg });
@@ -179,5 +207,8 @@ export async function loop(cfg) {
     }
     console.log(`[loop] sleeping ${cfg.scan.intervalSeconds}s`);
     await sleep(interval);
+    // Pick up edits without a manual restart. A loop running cached modules
+    // silently overwrites newer scans with stale output.
+    restartIfSourceChanged(stamp);
   }
 }

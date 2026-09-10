@@ -23,7 +23,7 @@ export function saveScan(rows) {
     ts,
     macro: rows[0]?.feat?.fomo?.macro ?? null,
     tokens: rows.map((r) => ({ feat: r.feat, score: r.score, advice: r.advice, panel: r.panel,
-      note: r.note, prediction: r.prediction, stability: r.stability })),
+      note: r.note, prediction: r.prediction, stability: r.stability, aura: r.aura })),
   };
   writeJson(join(DATA_DIR, "latest.json"), payload);
   writeJson(join(SCANS, `${Math.round(ts)}.json`), payload);

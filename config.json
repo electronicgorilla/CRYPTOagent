@@ -110,6 +110,14 @@
     "dailyCallBudget": 16,
     "applyMultiplier": true
   },
+  "aura": {
+    "_comment": "AURA POINTS - a 2-3 hour trend-continuation score, deliberately a different question from FOMO. FOMO is ignition; Aura is fuel. Scored from GeckoTerminal candles (free, no key) for the top `candleTopN` by composite.",
+    "enabled": true,
+    "candleTopN": 12,
+    "candleAggregateMinutes": 15,
+    "candleLimit": 24,
+    "logPredictions": true
+  },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",
     "enabled": true,

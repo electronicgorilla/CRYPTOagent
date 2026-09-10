@@ -61,6 +61,37 @@ const server = createServer(async (req, res) => {
 
     // --- curation loop ---
     if (p === "/api/scorecard") return send(res, 200, scorecard.build());
+    // The LIVE layer. Deliberately NOT a scan: it re-prices only the tokens
+    // already on screen in one batched DEX Screener call (~1 call per tick,
+    // against a 300/min ceiling), so the interface can move every 10s
+    // without multiplying discovery load or touching the ledger.
+    if (p === "/api/tick") {
+      const snap = store.latestScan();
+      const mints = (snap.tokens || []).map((t) => t.feat.mint).filter(Boolean).slice(0, 30);
+      if (!mints.length) return send(res, 200, { ts: Date.now() / 1000, quotes: {} });
+      try {
+        const r = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + mints.join(","),
+          { headers: { "User-Agent": "degen-radar/0.1" }, signal: AbortSignal.timeout(9000) });
+        const js = r.ok ? await r.json() : null;
+        const quotes = {};
+        for (const pr of js?.pairs || []) {
+          if (pr.chainId !== "solana") continue;
+          const a = pr.baseToken?.address;
+          const liq = pr.liquidity?.usd || 0;
+          if (!a || (quotes[a] && quotes[a].liq > liq)) continue;
+          quotes[a] = {
+            price: Number(pr.priceUsd || 0), liq, mcap: pr.marketCap || pr.fdv || 0,
+            m5: pr.priceChange?.m5 ?? 0, h1: pr.priceChange?.h1 ?? 0, h6: pr.priceChange?.h6 ?? 0,
+            volH1: pr.volume?.h1 || 0,
+            buys: pr.txns?.m5?.buys || 0, sells: pr.txns?.m5?.sells || 0,
+          };
+        }
+        return send(res, 200, { ts: Date.now() / 1000, quotes });
+      } catch (e) {
+        return send(res, 200, { ts: Date.now() / 1000, quotes: {}, error: e.message });
+      }
+    }
+
     if (p === "/api/regime") {
       const regime = await import("./regime.mjs");
       return send(res, 200, await regime.getRegime(loadConfig()));

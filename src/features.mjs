@@ -95,7 +95,7 @@ export function buildFeatures(pair, risk = {}, social = null) {
   const base = pair.baseToken || {};
   return {
     mint: base.address, symbol: base.symbol, name: base.name,
-    url: pair.url, dex: pair.dexId,
+    url: pair.url, dex: pair.dexId, pairAddress: pair.pairAddress,
     priceUsd: Number(pair.priceUsd || 0),
     liqUsd: liq, mcap, fdv,
     ageMin, ageH: ageMin / 60,
