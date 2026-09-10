@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Trick — CRYPTOagent explained</title>
+<style>
+  @page { size: A4; margin: 14mm 15mm 12mm 15mm; }
+  :root{
+    --paper:#faf7f0; --ink:#171310; --ink-2:#4a4239; --muted:#8a7f70;
+    --gold:#9a7b16; --gold-soft:#c9a227; --rule:#ddd3c0;
+    --up:#1d7a2e; --down:#a42b23; --blue:#2a5fa8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:10.5pt/1.5 "Times New Roman",Times,serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{page-break-after:always;padding-bottom:4mm}
+  .page:last-child{page-break-after:auto}
+  h1{font-size:30pt;line-height:1.02;margin:0 0 5mm;letter-spacing:-.5pt}
+  h2{font-size:15pt;margin:6mm 0 2.5mm;color:var(--gold);font-weight:400;
+     border-bottom:1px solid var(--rule);padding-bottom:2mm}
+  h3{font-size:12.5pt;margin:6mm 0 2mm;font-weight:400;font-style:italic;color:var(--ink-2)}
+  p{margin:0 0 2.6mm}
+  .lede{font-size:12.5pt;line-height:1.5;color:var(--ink-2)}
+  .kicker{font-size:8.5pt;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);
+    margin-bottom:4mm;font-family:Arial,Helvetica,sans-serif}
+  .rule{height:2px;background:var(--gold);width:26mm;margin:5mm 0 6mm}
+  .pull{font-size:12.5pt;line-height:1.38;font-style:italic;color:var(--ink);
+    border-left:2.5px solid var(--gold);padding:1mm 0 1mm 5mm;margin:5mm 0}
+  figure{margin:3.5mm 0;page-break-inside:avoid}
+  figcaption{font-size:9pt;color:var(--muted);margin-top:1.5mm;font-style:italic}
+  .box{border:1px solid var(--rule);background:#f4efe4;padding:3mm 4mm;margin:3mm 0;
+    page-break-inside:avoid}
+  .box b{color:var(--gold)}
+  table{width:100%;border-collapse:collapse;font-size:10pt;margin:3mm 0}
+  th{text-align:left;border-bottom:1.5px solid var(--gold);padding:2mm 2mm;
+    font-weight:400;font-size:8.5pt;letter-spacing:.12em;text-transform:uppercase;
+    font-family:Arial,Helvetica,sans-serif;color:var(--gold)}
+  td{border-bottom:1px solid var(--rule);padding:2mm;vertical-align:top}
+  .cover{min-height:225mm;display:flex;flex-direction:column;justify-content:center}
+  .sig{font-size:10pt;color:var(--muted);margin-top:8mm}
+  .foot{font-size:8.5pt;color:var(--muted);border-top:1px solid var(--rule);
+    padding-top:2mm;margin-top:6mm;font-family:Arial,Helvetica,sans-serif}
+  ul{margin:0 0 3mm;padding-left:6mm} li{margin:1.6mm 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+  .small{font-size:9.5pt;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="kicker">CRYPTOagent &middot; a plain reading</div>
+  <h1>The&nbsp;Trick</h1>
+  <div class="rule"></div>
+  <p class="lede">Everything this machine does, explained the way I'd explain a card trick:
+  slowly, and with the mystery removed. There isn't any mystery. That's the point.</p>
+  <p class="lede" style="margin-top:6mm">If a thing can't be explained in plain words,
+  it usually can't be explained at all — someone is just hoping you won't ask.</p>
+  <div class="sig">Written for Tanish &middot; a guide to what the terminal is actually doing</div>
+</section>
+
+<!-- ============ 1. WHAT YOU ARE LOOKING AT ============ -->
+<section class="page">
+  <div class="kicker">One</div>
+  <h1 style="font-size:21pt">What you're actually looking at</h1>
+
+  <p>Let's start honestly. A memecoin is not a company. It has no revenue, no product,
+  and no reason to be worth anything at all. What it has is a story and an audience.</p>
+
+  <p>So stop asking "is this a good asset." It isn't. Nothing here is. The only question
+  that has ever mattered in this market is a different one:</p>
+
+  <div class="pull">What does the crowd currently want to believe — and how much of that
+  belief has already been spent?</div>
+
+  <p>That's a confidence game. I don't mean that as an insult; I mean it as a description
+  of the mechanism. Somebody builds a story, an audience arrives because the story is
+  fun and the chart is moving, and the people who arrived early sell to the people who
+  arrived late. Everyone involved knows this. They're each betting they're early.</p>
+
+  <p>Once you see it that way, the machine gets simple. It isn't valuing anything.
+  It's watching a crowd, and trying to work out where in the performance we are.</p>
+
+  <h2>The five things it watches</h2>
+  <table>
+    <tr><th>Layer</th><th>The question it answers</th></tr>
+    <tr><td><b>Macro</b></td><td>Is there any money in the room at all? Solana memecoins are a
+      leveraged bet on Solana. When the chain bleeds, every clever chart below it is a trap.</td></tr>
+    <tr><td><b>Structure</b></td><td>Is the pool deep enough that a move means something,
+      or is one buyer pushing a puddle around?</td></tr>
+    <tr><td><b>Crowd</b></td><td>Is attention arriving, and is there any left to arrive?</td></tr>
+    <tr><td><b>Social</b></td><td>Who is saying it, and have they ever been right before?</td></tr>
+    <tr><td><b>Forecast</b></td><td>Given all that — what do we actually claim, out loud,
+      before we find out?</td></tr>
+  </table>
+
+  <div class="box">
+    <p style="margin:0"><b>The rule everything else hangs from.</b> If a number on that screen
+    can't be traced back to something observable, it isn't insight. It's decoration.
+    Every score the machine produces carries the chain of observations that made it. When
+    the chain is empty, it says so and declines to guess. A confident number with no
+    reasoning behind it is exactly how people get fooled — usually by themselves.</p>
+  </div>
+  <div class="foot">The Trick &middot; 1 &middot; What you're actually looking at</div>
+</section>
+
+<!-- ============ 2. THE INVERTED U ============ -->
+<section class="page">
+  <div class="kicker">Two</div>
+  <h1 style="font-size:21pt">Attention is a hill, not a ladder</h1>
+
+  <p>Here's the mistake almost every one of these systems makes, and it makes it
+  confidently: it treats attention as a straight line. More people talking equals better.
+  More mentions, higher score.</p>
+
+  <p>Think about that for a second and you'll see the problem. If everybody already knows,
+  who exactly is left to buy it from you?</p>
+
+  <figure>
+    <svg viewBox="0 0 640 250" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif">
+      <line x1="60" y1="200" x2="600" y2="200" stroke="#ddd3c0" stroke-width="1.5"/>
+      <line x1="60" y1="30" x2="60" y2="200" stroke="#ddd3c0" stroke-width="1.5"/>
+      <path d="M60 195 Q 130 190 200 120 Q 260 45 320 40 Q 400 36 470 120 Q 530 185 600 196"
+            fill="none" stroke="#c9a227" stroke-width="3"/>
+      <line x1="320" y1="40" x2="320" y2="200" stroke="#9a7b16" stroke-width="1" stroke-dasharray="4 4"/>
+      <circle cx="320" cy="40" r="5" fill="#9a7b16"/>
+      <text x="320" y="28" text-anchor="middle" font-size="13" fill="#171310">the money</text>
+      <text x="110" y="222" font-size="12" fill="#8a7f70">nobody knows</text>
+      <text x="112" y="238" font-size="11" fill="#a42b23" font-style="italic">no bid at all</text>
+      <text x="288" y="222" font-size="12" fill="#8a7f70">some know</text>
+      <text x="500" y="222" font-size="12" fill="#8a7f70">everybody knows</text>
+      <text x="470" y="238" font-size="11" fill="#a42b23" font-style="italic">you are the exit</text>
+      <text x="18" y="120" font-size="12" fill="#8a7f70" transform="rotate(-90 18 120)">opportunity</text>
+    </svg>
+    <figcaption>Attention, measured against what's normal for a coin that size. The machine
+    puts the peak at roughly three times the typical level for its tier.</figcaption>
+  </figure>
+
+  <p>Too little attention and there's no bid — you've found something genuinely early and
+  genuinely stuck. Too much and the price already contains everyone's enthusiasm; you'd be
+  buying the applause at the end of the show.</p>
+
+  <p>A system that scores attention as a straight line will, with total confidence and
+  perfect consistency, buy tops. Not occasionally. By design.</p>
+
+  <div class="box">
+    <p style="margin:0"><b>Something I got wrong, and it's instructive.</b> The first version
+    of this curve flattened everything above three times normal, so a coin at
+    <i>thirty-nine</i> times normal scored almost the same as one at three. Wildly saturated
+    and perfectly placed looked identical. The fix was arithmetic, not insight — but nobody
+    would have noticed, because the number looked reasonable. Numbers usually do.</p>
+  </div>
+  <div class="foot">The Trick &middot; 2 &middot; Attention is a hill</div>
+</section>
+
+<!-- ============ 3. SECOND CHANCE ============ -->
+<section class="page">
+  <div class="kicker">Three</div>
+  <h1 style="font-size:21pt">Where people actually buy</h1>
+
+  <p>Ask someone when the buying pressure peaks and they'll say the top. It doesn't.
+  At the top, most people are watching, not acting. They feel late. Feeling late makes
+  people hesitate.</p>
+
+  <p>The heaviest buying comes slightly afterwards, and the reason is entirely emotional:</p>
+
+  <div class="pull">Somebody watched it run without them. Then it dipped. Now it's turning
+  back up — and this time they're not going to miss it.</div>
+
+  <p>Regret, plus a discount. That combination moves money faster than any chart pattern,
+  because it isn't a chart pattern. It's a person who has already decided, waiting for
+  permission.</p>
+
+  <figure>
+    <svg viewBox="0 0 640 240" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif">
+      <line x1="50" y1="200" x2="610" y2="200" stroke="#ddd3c0" stroke-width="1.5"/>
+      <path d="M50 190 L 150 180 L 250 70 L 320 60 L 380 130 L 430 128 L 520 45 L 600 30"
+            fill="none" stroke="#2a5fa8" stroke-width="2.5"/>
+      <circle cx="320" cy="60" r="4.5" fill="#8a7f70"/>
+      <text x="322" y="48" font-size="12" fill="#8a7f70">they watched this</text>
+      <circle cx="405" cy="132" r="4.5" fill="#a42b23"/>
+      <text x="360" y="158" font-size="12" fill="#a42b23">it cooled</text>
+      <circle cx="455" cy="105" r="6" fill="#9a7b16"/>
+      <text x="440" y="94" font-size="13" fill="#171310" font-style="italic">here</text>
+      <rect x="425" y="20" width="185" height="165" fill="#c9a227" opacity="0.10"/>
+      <text x="470" y="222" font-size="11.5" fill="#8a7f70">the second chance</text>
+    </svg>
+    <figcaption>Ran hard, paused, turning up again. The machine looks for all three at once —
+    any one of them alone means nothing.</figcaption>
+  </figure>
+
+  <p>So the machine looks for that exact shape: a real run over six hours, a cooling or
+  flat stretch over one, and a tick upward in the last five minutes. All three together.
+  A rise alone is just a rise. A dip alone is just a dip. It's the sequence that carries
+  the meaning, because the sequence is what a person experiences.</p>
+  <div class="foot">The Trick &middot; 3 &middot; Where people actually buy</div>
+</section>
+
+<!-- ============ 4. FOMO vs AURA ============ -->
+<section class="page">
+  <div class="kicker">Four</div>
+  <h1 style="font-size:21pt">Ignition and fuel</h1>
+
+  <p>Two questions that sound like one question, and aren't:</p>
+  <ul>
+    <li><b>Will the crowd arrive in the next few minutes?</b> Call that <i>FOMO</i>. Ignition.</li>
+    <li><b>Will this still be burning in two or three hours?</b> Call that <i>Aura</i>. Fuel.</li>
+  </ul>
+
+  <p>Keep them separate, because they come apart constantly — and the way they come
+  apart is the useful part.</p>
+
+  <figure>
+    <svg viewBox="0 0 600 330" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif">
+      <rect x="90" y="30" width="440" height="250" fill="none" stroke="#ddd3c0"/>
+      <line x1="310" y1="30" x2="310" y2="280" stroke="#ddd3c0"/>
+      <line x1="90" y1="155" x2="530" y2="155" stroke="#ddd3c0"/>
+      <rect x="311" y="31" width="218" height="123" fill="#a42b23" opacity="0.09"/>
+      <rect x="91" y="156" width="218" height="123" fill="#1d7a2e" opacity="0.09"/>
+      <text x="420" y="80" text-anchor="middle" font-size="13" fill="#a42b23">loud, hollow</text>
+      <text x="420" y="100" text-anchor="middle" font-size="11" fill="#4a4239">a spike about to</text>
+      <text x="420" y="116" text-anchor="middle" font-size="11" fill="#4a4239">exhaust itself</text>
+      <text x="200" y="205" text-anchor="middle" font-size="13" fill="#1d7a2e">quiet, solid</text>
+      <text x="200" y="225" text-anchor="middle" font-size="11" fill="#4a4239">grinding along with</text>
+      <text x="200" y="241" text-anchor="middle" font-size="11" fill="#4a4239">nobody watching yet</text>
+      <text x="420" y="205" text-anchor="middle" font-size="12" fill="#8a7f70">the real thing</text>
+      <text x="200" y="80" text-anchor="middle" font-size="12" fill="#8a7f70">nothing here</text>
+      <text x="310" y="305" text-anchor="middle" font-size="12" fill="#171310">FOMO &nbsp;&rarr;&nbsp; ignition</text>
+      <text x="30" y="155" font-size="12" fill="#171310" transform="rotate(-90 30 155)">AURA &nbsp;&rarr;&nbsp; fuel</text>
+    </svg>
+    <figcaption>The top-right corner is where a system that only measures excitement spends
+    all of its money.</figcaption>
+  </figure>
+
+  <p>Rank on excitement alone and you will systematically buy the top-left box: the loud,
+  hollow ones. They look wonderful right up until they don't.</p>
+
+  <div class="box">
+    <p style="margin:0"><b>From the live terminal, the night this was written.</b> Four coins
+    scored high on durability. Every single one of them had almost no crowd —
+    one read <b>88 for fuel and 16 for ignition</b>. Nobody was talking about them at all.
+    A system watching only for excitement would never have shown you a single one.</p>
+  </div>
+  <div class="foot">The Trick &middot; 4 &middot; Ignition and fuel</div>
+</section>
+
+<!-- ============ 5. THE RUG CLOCK ============ -->
+<section class="page">
+  <div class="kicker">Five</div>
+  <h1 style="font-size:21pt">The clock, not the label</h1>
+
+  <p>This one is yours. You watched a coin die and told me the shape of it, and you were
+  right — and being right exposed something the machine was doing badly.</p>
+
+  <p>It had been treating rug risk as a <i>property</i>. A thing you check once: is the pool
+  locked, can they mint more, yes or no, filed away for half an hour. That's the wrong
+  shape entirely. Rug risk isn't a property.</p>
+
+  <div class="pull">It's a countdown. And the tell isn't in the contract or the price —
+  it's in the liquidity.</div>
+
+  <figure>
+    <svg viewBox="0 0 640 240" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif">
+      <line x1="50" y1="180" x2="600" y2="180" stroke="#ddd3c0" stroke-width="1.5"/>
+      <path d="M50 172 L 150 165 L 260 140 L 370 105 L 460 78 L 505 70" fill="none"
+            stroke="#1d7a2e" stroke-width="2.5"/>
+      <path d="M505 70 L 520 178 L 600 179" fill="none" stroke="#a42b23" stroke-width="2.5"/>
+      <rect x="370" y="30" width="135" height="150" fill="#c9a227" opacity="0.14"/>
+      <text x="437" y="24" text-anchor="middle" font-size="12" fill="#9a7b16">worth taking</text>
+      <text x="120" y="205" font-size="11.5" fill="#8a7f70">mentioned</text>
+      <text x="270" y="205" font-size="11.5" fill="#8a7f70">deposits arrive</text>
+      <text x="392" y="205" font-size="11.5" fill="#9a7b16">the band</text>
+      <text x="520" y="205" font-size="11.5" fill="#a42b23">pulled</text>
+      <circle cx="510" cy="70" r="5" fill="#a42b23"/>
+    </svg>
+    <figcaption>The bait is other people's money. The clock starts when attention does.</figcaption>
+  </figure>
+
+  <p>Somebody has to be attracted into the pool before there's anything worth stealing.
+  So the mention isn't a buy signal at all — it's the start of a timer. The danger rises
+  as the pool fills, peaks in a band where it's fat enough to be worth burning a wallet
+  for but not so fat that anyone's watching, and then it ends.</p>
+
+  <p>The machine now tracks four things and a gate. The gate is <b>capability</b> — if the
+  pool is genuinely locked and the authorities are renounced, nobody can pull it and the
+  clock doesn't run. Then: is the pool in the harvest band, is liquidity flowing in right
+  now, and is the price outrunning the pool so buyers are crowding thin ground.</p>
+
+  <div class="box">
+    <p style="margin:0 0 2mm"><b>Now the part I have to say plainly.</b> In this machine's own
+    records, liquidity collapse happened in about <b>three percent</b> of graded cases. A
+    detector for a three-percent event will be wrong most times it opens its mouth. That's
+    not pessimism, it's arithmetic.</p>
+    <p style="margin:0">So the clock writes down every warning it makes and gets marked
+    against reality like everything else. If it can't beat simply assuming nothing bad
+    happens, it should be switched off — and the record will say so out loud. A hunch that
+    refuses to be tested is just a hunch with good posture.</p>
+  </div>
+  <div class="foot">The Trick &middot; 5 &middot; The clock, not the label</div>
+</section>
+
+<!-- ============ 6. THE LEDGER ============ -->
+<section class="page">
+  <div class="kicker">Six</div>
+  <h1 style="font-size:21pt">Nothing gets to be an opinion</h1>
+
+  <p>Here's the part that matters more than any clever signal, and it's the least exciting
+  part to look at.</p>
+
+  <p>Anyone can sound confident about a coin. Confidence is free. So nothing in this
+  machine is allowed to simply <i>have a view</i>. Every component — every model, every
+  Telegram channel, even the plain arithmetic score — has to say something specific
+  enough to be wrong:</p>
+
+  <ul>
+    <li>Which direction.</li>
+    <li>By when, exactly.</li>
+    <li>How sure, as a number.</li>
+    <li>What would prove it wrong.</li>
+  </ul>
+
+  <figure>
+    <svg viewBox="0 0 620 250" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif">
+      <g stroke="#c9a227" stroke-width="2" fill="none">
+        <path d="M160 60 L 300 60" marker-end="url(#a)"/>
+        <path d="M400 90 L 400 150" marker-end="url(#a)"/>
+        <path d="M300 185 L 175 185" marker-end="url(#a)"/>
+        <path d="M110 155 L 110 95" marker-end="url(#a)"/>
+      </g>
+      <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#c9a227"/></marker></defs>
+      <rect x="30" y="40" width="130" height="46" fill="#f4efe4" stroke="#ddd3c0"/>
+      <text x="95" y="60" text-anchor="middle" font-size="12">it makes</text>
+      <text x="95" y="76" text-anchor="middle" font-size="12">a claim</text>
+      <rect x="300" y="40" width="140" height="46" fill="#f4efe4" stroke="#ddd3c0"/>
+      <text x="370" y="60" text-anchor="middle" font-size="12">written down,</text>
+      <text x="370" y="76" text-anchor="middle" font-size="12">with the time</text>
+      <rect x="320" y="152" width="150" height="46" fill="#f4efe4" stroke="#ddd3c0"/>
+      <text x="395" y="172" text-anchor="middle" font-size="12">reality answers</text>
+      <text x="395" y="188" text-anchor="middle" font-size="12">it, unprompted</text>
+      <rect x="40" y="152" width="140" height="46" fill="#f4efe4" stroke="#ddd3c0"/>
+      <text x="110" y="172" text-anchor="middle" font-size="12">it is believed</text>
+      <text x="110" y="188" text-anchor="middle" font-size="12">a little more</text>
+      <text x="112" y="128" text-anchor="middle" font-size="11.5" fill="#8a7f70" font-style="italic">or a little less</text>
+    </svg>
+    <figcaption>Not a clever loop. Just the only honest one.</figcaption>
+  </figure>
+
+  <p>Then the machine goes back on its own, later, and checks. It doesn't wait to be asked
+  and it doesn't wait for a good mood. That record is the single thing here that cannot be
+  regenerated if it's lost, which is why it's the one file worth protecting.</p>
+
+  <div class="box">
+    <p style="margin:0 0 2mm"><b>The plain benchmark.</b> The simple arithmetic score competes
+    in the same table as everything expensive. If a sophisticated model can't beat plain
+    arithmetic, the honest response is to turn the model off — not to explain why the
+    comparison is unfair.</p>
+    <p style="margin:0"><b>And a caution about early numbers.</b> Under fifty or so graded
+    calls, a track record is noise wearing a percentage sign. The table says <i>unproven</i>
+    rather than showing you a flattering figure. It'll go on saying that for days. Let it.</p>
+  </div>
+  <div class="foot">The Trick &middot; 6 &middot; Nothing gets to be an opinion</div>
+</section>
+
+<!-- ============ 7. TWO EXPLANATIONS ============ -->
+<section class="page">
+  <div class="kicker">Seven</div>
+  <h1 style="font-size:21pt">When somebody is right too often</h1>
+
+  <p>Suppose one of your channels starts calling them correctly. Really correctly, more
+  than luck would allow. The instinct is obvious: follow it harder.</p>
+
+  <p>Resist that, because there are only two ordinary explanations and they point in
+  opposite directions.</p>
+
+  <figure>
+    <svg viewBox="0 0 620 230" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Times New Roman,serif">
+      <rect x="20" y="20" width="270" height="180" fill="#1d7a2e" opacity="0.07" stroke="#ddd3c0"/>
+      <rect x="330" y="20" width="270" height="180" fill="#a42b23" opacity="0.07" stroke="#ddd3c0"/>
+      <text x="155" y="52" text-anchor="middle" font-size="15" fill="#1d7a2e">They read the tape</text>
+      <text x="155" y="82" text-anchor="middle" font-size="11.5" fill="#4a4239">The signals were already</text>
+      <text x="155" y="100" text-anchor="middle" font-size="11.5" fill="#4a4239">visible when they spoke.</text>
+      <text x="155" y="134" text-anchor="middle" font-size="12.5" fill="#171310" font-style="italic">Worth following —</text>
+      <text x="155" y="153" text-anchor="middle" font-size="12.5" fill="#171310" font-style="italic">and worth copying.</text>
+      <text x="465" y="52" text-anchor="middle" font-size="15" fill="#a42b23">They knew first</text>
+      <text x="465" y="82" text-anchor="middle" font-size="11.5" fill="#4a4239">The tape was flat and it</text>
+      <text x="465" y="100" text-anchor="middle" font-size="11.5" fill="#4a4239">moved anyway.</text>
+      <text x="465" y="134" text-anchor="middle" font-size="12.5" fill="#171310" font-style="italic">You are not a follower.</text>
+      <text x="465" y="153" text-anchor="middle" font-size="12.5" fill="#171310" font-style="italic">You are the exit.</text>
+    </svg>
+    <figcaption>Same excellent hit rate. Completely opposite meaning.</figcaption>
+  </figure>
+
+  <p>Telling them apart doesn't require anything exotic, which is usually the case with
+  things that look like mind-reading. The machine already recorded what the market looked
+  like at the moment each call was made. So it asks a simple question of the winners:
+  <i>was anything visible yet?</i></p>
+
+  <p>If volume was already climbing and the price was already moving, they were reading
+  the same screen you can read. That's a skill, it's followable, and you could learn it.
+  If everything was flat and it moved anyway — they weren't reading. They were involved.</p>
+
+  <p>There's a third case worth knowing, particular to this market: a large enough channel
+  can <i>cause</i> the move it predicted. That's neither skill nor secret knowledge. It's
+  just a crowd being pointed at something.</p>
+  <div class="foot">The Trick &middot; 7 &middot; When somebody is right too often</div>
+</section>
+
+<!-- ============ 8. HORIZONS & HUMILITY ============ -->
+<section class="page">
+  <div class="kicker">Eight</div>
+  <h1 style="font-size:21pt">Three questions, not one</h1>
+
+  <p>The thing most likely to jump in eight minutes is rarely the thing most likely to
+  survive the week. Rank them together and you've answered neither question. So the board
+  asks three separate ones, and admits they're not equally answerable.</p>
+
+  <table>
+    <tr><th>Window</th><th>What it's really asking</th><th>How much to trust it</th></tr>
+    <tr><td><b>5–10 minutes</b></td><td>Is it igniting right now — flow, acceleration, crowd</td>
+        <td>Fast and shallow. Fine, if you're watching.</td></tr>
+    <tr><td><b>1–5 hours</b></td><td>Does the trend have fuel — structure, absorption, participation</td>
+        <td>The strongest thing here.</td></tr>
+    <tr><td><b>1–10 days</b></td><td>Will it still exist</td>
+        <td><b>A screen, not a forecast.</b></td></tr>
+  </table>
+
+  <p>That last row is the honest one. There is no tested long-range signal in this machine.
+  Its longest measured window is six hours, and most of these coins will not exist in ten
+  days. So it doesn't pretend to forecast returns out there — it ranks the few traits that
+  correlate with still being tradeable later, and it labels itself a screen everywhere it
+  appears.</p>
+
+  <div class="pull">Three tiers presented as equally solid would be a lie told with good
+  formatting. Two of them are readings. One is a filter.</div>
+
+  <p>You'll also notice a tier occasionally says <i>nothing clears the bar</i> and names the
+  best thing it rejected. That's deliberate. Filling a slot because a slot exists is how
+  a system starts lying to you politely.</p>
+
+  <h2>What it can't do</h2>
+  <ul>
+    <li><b>It can't see who holds the coin.</b> Wallet concentration, insider clusters,
+    connected wallets — all invisible without paid data. That's the largest blind spot.</li>
+    <li><b>It can't read a private channel.</b> Only public ones, and the public ones you
+    have wired mostly post news, not calls.</li>
+    <li><b>It can't tell you a thing is safe.</b> Nothing here is safe. It can sometimes
+    tell you a thing is <i>more dangerous than it looks</i>, which is a different and more
+    useful service.</li>
+    <li><b>It cannot buy anything.</b> No keys, no wallet, no orders. It produces a reading
+    and a record. What you do next is entirely yours.</li>
+  </ul>
+
+  <div class="box">
+    <p style="margin:0">Last thought, and it's the only advice in here. The machine's real
+    value isn't any single number on the screen — it's that it writes down what it thought
+    <i>before</i> it knew, and then goes back and checks. Do that yourself and you'll
+    improve faster than any model I could build you. Most people never write it down,
+    which is precisely why most people remember themselves as having been right.</p>
+  </div>
+  <div class="foot">The Trick &middot; 8 &middot; Three questions, not one &middot; Not financial advice</div>
+</section>
+
+</body>
+</html>
