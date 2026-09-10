@@ -3,6 +3,7 @@
 //   -> GRADE due predictions (free) -> AGENT PANEL on promoted tokens -> persist
 import { loadConfig } from "./config.mjs";
 import * as dex from "./dexscreener.mjs";
+import * as gt from "./geckodiscovery.mjs";
 import * as rugcheck from "./rugcheck.mjs";
 import * as social from "./social.mjs";
 import { buildCohort, buildFomo } from "./fomo.mjs";
@@ -41,6 +42,12 @@ export async function runScan({ cfg, verbose = true } = {}) {
   const t0 = Date.now();
 
   const mints = await dex.discoverCandidates(cfg);
+  // Merge the unbiased pool feed in. DEX Screener finds what is advertised;
+  // GeckoTerminal finds what is actually trading.
+  const gtMints = await gt.discover(cfg);
+  let added = 0;
+  for (const [mint, meta] of gtMints) if (!mints.has(mint)) { mints.set(mint, meta); added++; }
+  if (verbose && added) console.log(`[discovery] +${added} from GeckoTerminal pool feeds`);
   if (verbose) console.log(`[scan] ${mints.size} candidate mints`);
   let pairs = await dex.hydrate(mints, cfg);
   pairs = pairs.filter((p) => passesFilter(p, cfg));

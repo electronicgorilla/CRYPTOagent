@@ -2,8 +2,8 @@
   "scan": {
     "chain": "solana",
     "intervalSeconds": 300,
-    "maxCandidates": 80,
-    "minLiquidityUsd": 8000,
+    "maxCandidates": 220,
+    "minLiquidityUsd": 5000,
     "maxLiquidityUsd": 6000000,
     "minPairAgeMinutes": 8,
     "maxPairAgeHours": 1200,
@@ -17,8 +17,28 @@
         "AI agent",
         "cat",
         "dog",
-        "meme"
+        "meme",
+        "bonk",
+        "wif",
+        "pepe",
+        "trump",
+        "moon",
+        "baby",
+        "gold",
+        "elon",
+        "frog",
+        "chill"
       ]
+    },
+    "geckoDiscovery": {
+      "_comment": "Second discovery source. DEX Screener boosts/profiles are PROMOTIONAL surfaces, so that universe was biased toward tokens with a marketing budget. GeckoTerminal indexes pools directly - trending (traded hardest), fresh (newest), deep (largest).",
+      "enabled": true,
+      "feeds": [
+        "trending",
+        "fresh",
+        "deep"
+      ],
+      "pagesPerFeed": 3
     }
   },
   "weights": {
@@ -113,7 +133,7 @@
   "aura": {
     "_comment": "AURA POINTS - a 2-3 hour trend-continuation score, deliberately a different question from FOMO. FOMO is ignition; Aura is fuel. Scored from GeckoTerminal candles (free, no key) for the top `candleTopN` by composite.",
     "enabled": true,
-    "candleTopN": 12,
+    "candleTopN": 18,
     "candleAggregateMinutes": 15,
     "candleLimit": 24,
     "logPredictions": true

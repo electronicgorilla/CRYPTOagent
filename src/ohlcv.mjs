@@ -55,7 +55,7 @@ export async function getMany(pools, opts = {}) {
   const out = new Map();
   for (const p of pools) {
     out.set(p, await getCandles(p, opts));
-    await sleep(120); // ~8/s worst case, comfortably under 30/min sustained
+    await sleep(220); // discovery now shares this budget - stay under ~30/min
   }
   return out;
 }

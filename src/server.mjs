@@ -97,14 +97,21 @@ const server = createServer(async (req, res) => {
 
     if (p === "/api/tick") {
       const snap = store.latestScan();
-      const mints = (snap.tokens || []).map((t) => t.feat.mint).filter(Boolean).slice(0, 30);
+      const mints = (snap.tokens || []).map((t) => t.feat.mint).filter(Boolean).slice(0, 60);
       if (!mints.length) return send(res, 200, { ts: Date.now() / 1000, quotes: {} });
       try {
-        const r = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + mints.join(","),
-          { headers: { "User-Agent": "degen-radar/0.1" }, signal: AbortSignal.timeout(9000) });
-        const js = r.ok ? await r.json() : null;
+        // DEX Screener takes 30 addresses per call; the widened universe needs two.
+        const batches = [];
+        for (let b = 0; b < mints.length; b += 30) batches.push(mints.slice(b, b + 30));
+        const pairs = [];
+        for (const bt of batches) {
+          const r = await fetch("https://api.dexscreener.com/latest/dex/tokens/" + bt.join(","),
+            { headers: { "User-Agent": "degen-radar/0.1" }, signal: AbortSignal.timeout(9000) });
+          const js = r.ok ? await r.json() : null;
+          if (js?.pairs) pairs.push(...js.pairs);
+        }
         const quotes = {};
-        for (const pr of js?.pairs || []) {
+        for (const pr of pairs) {
           if (pr.chainId !== "solana") continue;
           const a = pr.baseToken?.address;
           const liq = pr.liquidity?.usd || 0;
@@ -116,7 +123,24 @@ const server = createServer(async (req, res) => {
             buys: pr.txns?.m5?.buys || 0, sells: pr.txns?.m5?.sells || 0,
           };
         }
-        return send(res, 200, { ts: Date.now() / 1000, quotes });
+        // Re-rank on live prices so the board moves between scans. Only the
+        // fields the tick actually refreshes are overwritten; everything else
+        // (aura, rug clock, candles) stays as the last scan computed it.
+        let board = null;
+        try {
+          const { buildBoard } = await import("./horizons.mjs");
+          const live = (snap.tokens || []).map((t) => {
+            const qq = quotes[t.feat.mint];
+            if (!qq) return t;
+            const flow = (qq.buys + qq.sells) ? qq.buys / (qq.buys + qq.sells) : t.feat.buyRatioH1;
+            return { ...t, feat: { ...t.feat, priceUsd: qq.price, liqUsd: qq.liq, mcap: qq.mcap,
+              buyRatioH1: flow,
+              priceChange: { ...t.feat.priceChange, m5: qq.m5, h1: qq.h1, h6: qq.h6 },
+              volume: { ...t.feat.volume, h1: qq.volH1 } } };
+          });
+          board = buildBoard(live, { minScore: loadConfig().horizons?.minScore ?? 0.42 });
+        } catch { /* a failed re-rank must not break the price tick */ }
+        return send(res, 200, { ts: Date.now() / 1000, quotes, board });
       } catch (e) {
         return send(res, 200, { ts: Date.now() / 1000, quotes: {}, error: e.message });
       }

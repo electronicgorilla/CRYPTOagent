@@ -401,6 +401,7 @@ async function tick(){
     if(!r||!r.quotes) return;
     PREV=QUOTES; QUOTES=r.quotes;
     $('#stTick').textContent=new Date(r.ts*1000).toLocaleTimeString('en-GB');
+    if(r.board) paintBoard(r.board, true);   // live re-rank, every 10s
     const cols=activeCols().filter(id=>COLUMNS[id]&&COLUMNS[id].live);
     for(const t of STATE.tokens||[]){
       const now=QUOTES[t.feat.mint], was=PREV[t.feat.mint];
@@ -533,9 +534,14 @@ function renderRail(){
 // merely likely to still exist next week.
 async function loadBoard(){
   const b=await fetch('/api/board').then(r=>r.json()).catch(()=>null);
+  paintBoard(b,false);
+}
+
+function paintBoard(b,live){
   const el=$('#board'); if(!el) return;
+  if(el.classList.contains('hid')) return;
   if(!b||!b.horizons||!b.horizons.length){el.innerHTML='<h4>Horizon board</h4><div class="hz none" style="padding:14px">No brief yet — run a scan.</div>';return;}
-  el.innerHTML=`<h4>Horizon board <span>${b.ts?new Date(b.ts*1000).toLocaleTimeString('en-GB'):''}</span>
+  el.innerHTML=`<h4>Horizon board <span>${live?'live ':''}${b.ts?new Date(b.ts*1000).toLocaleTimeString('en-GB'):''}</span>
     <button class="ui" id="boardHide" style="padding:1px 6px;font-size:10px">hide</button></h4>
   ${b.horizons.map(h=>`<div class="hz">
     <div class="hd"><span class="lab">${h.label}</span>
