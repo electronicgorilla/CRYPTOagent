@@ -21,6 +21,7 @@ export function saveScan(rows) {
   const ts = Date.now() / 1000;
   const payload = {
     ts,
+    macro: rows[0]?.feat?.fomo?.macro ?? null,
     tokens: rows.map((r) => ({ feat: r.feat, score: r.score, advice: r.advice, panel: r.panel,
       note: r.note, prediction: r.prediction, stability: r.stability })),
   };

@@ -1,6 +1,6 @@
 // Zero-dependency HTTP server: static dashboard + JSON API.
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 import { ROOT, loadConfig, loadEnv } from "./config.mjs";
 import * as store from "./store.mjs";
@@ -61,6 +61,35 @@ const server = createServer(async (req, res) => {
 
     // --- curation loop ---
     if (p === "/api/scorecard") return send(res, 200, scorecard.build());
+    if (p === "/api/regime") {
+      const regime = await import("./regime.mjs");
+      return send(res, 200, await regime.getRegime(loadConfig()));
+    }
+
+    // Live push. The scan loop is a SEPARATE PROCESS, so in-process events
+    // are not available - the server watches the data file the loop writes
+    // and pushes when it actually changes. Works whether the scan came from
+    // the loop, the CLI, or the dashboard button.
+    if (p === "/api/stream") {
+      res.writeHead(200, {
+        "content-type": "text/event-stream",
+        "cache-control": "no-cache",
+        connection: "keep-alive",
+      });
+      const push = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      push("hello", { ts: Date.now() / 1000 });
+      let last = 0;
+      const tick = setInterval(() => {
+        try {
+          const f = join(ROOT, "data", "latest.json");
+          const m = existsSync(f) ? statSync(f).mtimeMs : 0;
+          if (m && m !== last) { last = m; push("scan", { mtime: m }); }
+          else push("beat", { ts: Date.now() / 1000, running: scanState.running });
+        } catch { /* keep the stream alive regardless */ }
+      }, 2000);
+      req.on("close", () => clearInterval(tick));
+      return;
+    }
     if (p === "/api/edge") {
       const { channelEdgeSources } = await import("./doctrine.mjs");
       return send(res, 200, channelEdgeSources(ledger.load()));

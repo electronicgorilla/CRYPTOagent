@@ -9,6 +9,7 @@ import { buildCohort, buildFomo } from "./fomo.mjs";
 import * as adapt from "./adapt.mjs";
 import { pollChannels } from "./telegram/calls.mjs";
 import { runPredictions } from "./predict.mjs";
+import * as regime from "./regime.mjs";
 import { buildFeatures } from "./features.mjs";
 import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
@@ -86,16 +87,29 @@ export async function runScan({ cfg, verbose = true } = {}) {
   // --- pass 3: FOMO. Needs the whole cohort, because saturation, share of
   // attention and narrative crowding are only meaningful relative to the
   // rest of the field - and the session regime gates all of them.
+  // LAYER 0 first: the macro tape gates everything measured inside the cohort.
+  let macro = { available: false };
+  if (cfg.regime?.enabled) {
+    try { macro = await regime.getRegime(cfg); } catch (e) { macro = { available: false, error: e.message }; }
+  }
   const cohort = buildCohort(rows.map((r) => r.feat));
   const compositeWeights = adapt.effectiveComposite(cfg);
   for (const r of rows) {
     r.feat.fomo = buildFomo(r.feat, cohort, store.history(r.feat.mint));
+    // Scale crowd psychology by the macro tape. A perfect setup in a bleeding
+    // chain is still a bad trade - the buyers are simply not there.
+    if (macro.available && cfg.regime?.applyMultiplier && macro.multiplier) {
+      r.feat.fomo.fomo = Math.max(0, Math.min(1, r.feat.fomo.fomo * macro.multiplier));
+      r.feat.fomo.macro = { regime: macro.regime, multiplier: macro.multiplier, note: macro.note };
+    }
     r.score = scoreToken(r.feat, cfg, compositeWeights);
     r.advice = generateAdvice(r.feat, r.score);
   }
   assignVerdicts(rows, cfg);
   rows.sort((a, b) => b.score.composite - a.score.composite);
   if (verbose) console.log(`[fomo] session ${cohort.regime} (breadth ${(cohort.breadth*100).toFixed(0)}% green)`);
+  if (verbose && macro.available) console.log(`[regime] ${macro.regime} \u2014 ${macro.note}` +
+    (macro.cached ? ` (cached ${macro.ageMinutes}m)` : ` (${macro.callsToday}/${macro.budget} calls today)`));
 
   // --- pass 4: prediction. Commit to a falsifiable claim BEFORE being asked,
   // then let the market answer it. Ranks are bootstrapped so an unstable top
@@ -151,7 +165,7 @@ export async function runScan({ cfg, verbose = true } = {}) {
 
   const ts = store.saveScan(rows);
   if (verbose) console.log(`[scan] saved ${rows.length} tokens in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-  return { ts, tokens: rows, graded, agents, telegram };
+  return { ts, tokens: rows, graded, agents, telegram, macro };
 }
 
 export async function loop(cfg) {

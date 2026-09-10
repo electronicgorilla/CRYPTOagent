@@ -100,6 +100,16 @@
     "weightJitter": 0.35,
     "logForecasts": true
   },
+  "regime": {
+    "_comment": "LAYER 0 - macro. EODHD free plan is 20 calls/DAY and batching bills PER SYMBOL (verified), so this defaults to SOL alone on a 90-minute floor (~16 calls/day). Add BTC-USD.CC only on a paid plan. Needs EODHD_API_KEY in .env.",
+    "enabled": true,
+    "symbols": [
+      "SOL-USD.CC"
+    ],
+    "refreshMinutes": 90,
+    "dailyCallBudget": 16,
+    "applyMultiplier": true
+  },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",
     "enabled": true,
