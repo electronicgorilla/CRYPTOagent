@@ -25,6 +25,7 @@ import { AGENTS, BY_ID } from "./roster.mjs";
 import { runAgent, available } from "./client.mjs";
 import * as ledger from "../ledger.mjs";
 import * as scorecard from "../scorecard.mjs";
+import * as observations from "../observations.mjs";
 
 export { available };
 
@@ -149,7 +150,7 @@ export async function analyseScan(rows, cfg, { verbose = true } = {}) {
     const [arb] = await runStage(
       3,
       feat,
-      { panel, rule_based_score: score, agent_scorecards: cards, user_notes: row.note || "" },
+      { panel, rule_based_score: score, agent_scorecards: cards, user_notes: row.note || "", operator_observations: observations.forArbiter(feat.mint) },
       budget
     );
     panel[arb.agent.id] = arb.res.ok ? arb.res.output : { error: arb.res.error };

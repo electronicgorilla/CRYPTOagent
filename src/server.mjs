@@ -65,6 +65,18 @@ const server = createServer(async (req, res) => {
     // already on screen in one batched DEX Screener call (~1 call per tick,
     // against a 300/min ceiling), so the interface can move every 10s
     // without multiplying discovery load or touching the ledger.
+    if (p === "/api/observations") {
+      const obs = await import("./observations.mjs");
+      const m = url.searchParams.get("mint");
+      return send(res, 200, m ? obs.forToken(m) : obs.recent());
+    }
+    if (p === "/api/observe" && req.method === "POST") {
+      const obs = await import("./observations.mjs");
+      const body = await readBody(req);
+      if (!body.text) return send(res, 400, { ok: false, error: "text required" });
+      return send(res, 200, { ok: true, row: obs.record(body) });
+    }
+
     if (p === "/api/tick") {
       const snap = store.latestScan();
       const mints = (snap.tokens || []).map((t) => t.feat.mint).filter(Boolean).slice(0, 30);

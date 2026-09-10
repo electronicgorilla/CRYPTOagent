@@ -283,16 +283,26 @@ const COLUMNS={
     cell:t=>t.feat.ageH<1?Math.round(t.feat.ageH*60)+'m':t.feat.ageH<48?t.feat.ageH.toFixed(1)+'h':(t.feat.ageH/24).toFixed(1)+'d'},
   phase:{label:'Phase',w:'l',sort:t=>t.advice.phase,tip:'Lifecycle phase heuristic',
     cell:t=>`<span class="nm" style="font-size:11px">${esc(t.advice.phase)}</span>`},
+  rug:{label:'Rug',w:'r',sort:t=>t.rug?.pressure??-1,
+    tip:'RUG CLOCK — pressure over time, not a static score. Rises as liquidity is ATTRACTED into a pool that can still be pulled.',
+    cell:t=>{if(!t.rug)return '—';const c=t.rug.pressure>=75?'var(--down)':t.rug.pressure>=60?'var(--warn)':t.rug.pressure>=40?'var(--s4)':'var(--muted)';
+      return `<span style="color:${c}">${t.rug.pressure}</span>`}},
+  rugBand:{label:'Clock',w:'c',sort:t=>t.rug?.pressure??-1,tip:'Rug pressure band',
+    cell:t=>t.rug?`<span class="pill" style="color:${t.rug.pressure>=60?'var(--down)':'var(--muted)'};border-color:${t.rug.pressure>=60?'rgba(208,59,59,.45)':'var(--rule)'}">${t.rug.band}</span>`:'—'},
+  liqd:{label:'LP Δ',w:'r',sort:t=>t.rug?.liq_change_pct??-999,
+    tip:'Liquidity change over the tracking window. Rising = deposits arriving (bait loading). Falling = withdrawal may be underway.',
+    cell:t=>{const v=t.rug?.liq_change_pct;return v==null?'<span class="zero">—</span>':`<span class="${v>5?'up':v<-5?'down':'zero'}">${v>0?'+':''}${v}%</span>`}},
   sat:{label:'Sat',w:'r',sort:t=>t.feat.fomo?.saturation??-1,
     tip:'Attention saturation vs tier median. The FOMO curve peaks near 3x and dies past ~8x.',
     cell:t=>t.feat.fomo?nf(t.feat.fomo.saturation,1)+'x':'—'},
 };
 const TEMPLATES={
-  'Overview':      ['sym','composite','verdict','aura','fomo','price','m5','h1','h6','mcap','liq','age'],
+  'Overview':      ['sym','composite','verdict','aura','rug','fomo','price','m5','h1','h6','mcap','liq','age'],
   'Momentum':      ['sym','composite','price','m5','h1','h6','volH1','flow','mom','sat','phase'],
   'Durability':    ['sym','aura','auraBand','hl','dd','rvol','h1','h6','volH1','age','phase'],
   'Forecast':      ['sym','composite','call','pup','evol','rvol','stab','aura','h1'],
-  'Risk':          ['sym','composite','risk','liq','liqh','mcap','age','sat','phase'],
+  'Risk':          ['sym','composite','risk','rug','rugBand','liq','liqd','mcap','age','sat'],
+  'Rug watch':     ['sym','rug','rugBand','liqd','liq','mcap','age','h1','m5','risk','phase'],
   'Everything':    Object.keys(COLUMNS),
 };
 const LS='cryptoagent.cols.v1';
@@ -424,11 +434,47 @@ function renderSide(){
     ${fo?`<h3>Crowd</h3>${fo.macro?`<div class="why">${esc(fo.macro.note)}</div>`:''}
       ${fo.reasons.slice(0,3).map(r=>`<div class="why">${esc(r)}</div>`).join('')}`:''}
 
+    ${t.rug?`<h3 style="color:${t.rug.pressure>=60?'var(--down)':'var(--gold)'}">Rug clock — ${t.rug.pressure} (${t.rug.band})</h3>
+      ${t.rug.reasons.map(r=>`<div class="why" style="border-color:${t.rug.pressure>=60?'var(--down)':'var(--gold-dim)'}">${esc(r)}</div>`).join('')}
+      <div class="nm" style="margin-top:6px;line-height:1.5">${esc(t.rug.caveat)}</div>`:''}
+
+    <h3>Field notes</h3>
+    <div id="obsList" class="nm">loading&hellip;</div>
+    <textarea id="obsText" placeholder="What are you seeing? e.g. 'channel X posted this 4 min before the pump'"
+      style="width:100%;background:var(--plane);border:1px solid var(--rule);color:var(--ink);
+      padding:8px;font:inherit;font-size:12px;min-height:52px;margin-top:8px"></textarea>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <select id="obsTag" style="flex:none"><option value="note">note</option><option value="rug">rug</option>
+        <option value="pattern">pattern</option><option value="channel">channel</option></select>
+      <button class="go" id="obsSave" style="flex:1">Log observation</button></div>
+
     <h3>${esc(a.phase)}</h3><div class="nm" style="line-height:1.6">${esc(a.phase_note)}</div>
     <h3>Risks</h3><ul>${(a.risks||[]).slice(0,4).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
     <h3>Invalidation</h3><ul>${(a.invalidation||[]).slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
   </div>`;
   paintSideLive();
+  loadObs(f);
+  $('#obsSave').onclick=async()=>{
+    const text=$('#obsText').value.trim(); if(!text)return;
+    await fetch('/api/observe',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text,tag:$('#obsTag').value,mint:f.mint,symbol:f.symbol})});
+    $('#obsText').value=''; loadObs(f);
+  };
+}
+
+// Field notes: what the operator sees that the scanner cannot compute.
+// These are handed to the arbiter as context on the next paid read.
+async function loadObs(f){
+  const el=$('#obsList'); if(!el) return;
+  const rows=await fetch('/api/observations?mint='+encodeURIComponent(f.mint)).then(r=>r.json()).catch(()=>[]);
+  const glob=await fetch('/api/observations').then(r=>r.json()).catch(()=>[]);
+  const pat=glob.filter(r=>r.mint!==f.mint&&(r.tag==='pattern'||r.tag==='rug')).slice(0,2);
+  el.innerHTML=(rows.length?rows.slice(0,4).map(r=>
+    `<div class="why" style="border-color:var(--s1)"><b>${esc(r.tag)}</b> &middot;
+      ${new Date(r.ts*1000).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})}<br>${esc(r.text)}</div>`).join('')
+    :'<div style="opacity:.6">No notes on this token yet.</div>')
+    +(pat.length?'<div style="margin-top:8px;opacity:.75">Standing patterns you logged:</div>'+pat.map(r=>
+      `<div class="why" style="border-color:var(--rule)">${esc(r.symbol||'general')}: ${esc(r.text.slice(0,150))}</div>`).join(''):'');
 }
 
 const LAYERS=[['Layer 0','Macro'],['Layer 1','Cohort'],['Layer 2','Structure'],

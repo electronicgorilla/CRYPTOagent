@@ -23,7 +23,7 @@ export function saveScan(rows) {
     ts,
     macro: rows[0]?.feat?.fomo?.macro ?? null,
     tokens: rows.map((r) => ({ feat: r.feat, score: r.score, advice: r.advice, panel: r.panel,
-      note: r.note, prediction: r.prediction, stability: r.stability, aura: r.aura })),
+      note: r.note, prediction: r.prediction, stability: r.stability, aura: r.aura, rug: r.rug })),
   };
   writeJson(join(DATA_DIR, "latest.json"), payload);
   writeJson(join(SCANS, `${Math.round(ts)}.json`), payload);
@@ -35,6 +35,9 @@ export function saveScan(rows) {
       ts, composite: r.score.composite, attention: r.score.attention,
       momentum: r.score.momentum, liquidityHealth: r.score.liquidityHealth,
       risk: r.score.risk, price: r.feat.priceUsd,
+      // Liquidity trajectory: a rug is preceded by LP being ATTRACTED, not
+      // by anything visible in price. Without this the clock is blind.
+      liq: r.feat.liqUsd, mcap: r.feat.mcap,
     });
     writeJson(p, arr.slice(-500));
   }

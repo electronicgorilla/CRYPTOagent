@@ -118,6 +118,14 @@
     "candleLimit": 24,
     "logPredictions": true
   },
+  "rugclock": {
+    "_comment": "Rug pressure as a COUNTDOWN, not a property. Static contract risk is read once; this tracks liquidity trajectory over time, because the observed pattern is: attention arrives -> LP is attracted -> once the pool is worth stealing, it is pulled.",
+    "enabled": true,
+    "harvestBandLow": 12000,
+    "harvestBandHigh": 250000,
+    "inflowWindowMinutes": 30,
+    "alertAt": 60
+  },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",
     "enabled": true,

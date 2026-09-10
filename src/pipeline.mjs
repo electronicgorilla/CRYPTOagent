@@ -13,6 +13,7 @@ import * as regime from "./regime.mjs";
 import { sourceStamp, restartIfSourceChanged } from "./reload.mjs";
 import * as ohlcv from "./ohlcv.mjs";
 import { computeAura, auraPrediction } from "./aura.mjs";
+import { rugClock, rugPrediction } from "./rugclock.mjs";
 import { buildFeatures } from "./features.mjs";
 import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
@@ -138,6 +139,24 @@ export async function runScan({ cfg, verbose = true } = {}) {
       const c = ohlcv.coverage();
       const enduring = rows.filter((r) => r.aura?.points >= 65).length;
       console.log(`[aura] ${enduring}/${rows.length} enduring (candles: ${c.calls} fetched, ${c.misses} unavailable)`);
+    }
+  }
+
+  // --- RUG CLOCK: pressure over time, from the liquidity curve. ---
+  if (cfg.rugclock?.enabled) {
+    for (const r of rows) r.rug = rugClock(r.feat, store.history(r.feat.mint), cfg);
+    // Log the warning so the hypothesis is GRADED, not believed.
+    for (const r of rows) {
+      const rp = rugPrediction(r.feat, r.rug, cfg);
+      if (rp) ledger.record({ agent: 'rugclock', model: 'liquidity-trajectory', cost: 0,
+        phase: r.advice.phase, feat: r.feat, score: r.score, pred: rp,
+        extra: { rug_pressure: r.rug.pressure, rug_components: r.rug.components } });
+    }
+    if (verbose) {
+      const hot = rows.filter((r) => r.rug && r.rug.pressure >= (cfg.rugclock.alertAt ?? 60));
+      if (hot.length) console.log(`[rugclock] ${hot.length} in the harvest band: ` +
+        hot.map((r) => `${r.feat.symbol}(${r.rug.pressure})`).join(', '));
+      else console.log('[rugclock] none in the harvest band');
     }
   }
 
