@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>degen-radar</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#141a24; --panel2:#1b232f; --line:#26303d;
+    --fg:#e6edf3; --dim:#8b98a5; --accent:#4da3ff;
+    --good:#3fb950; --warn:#d29922; --bad:#f85149; --neutral:#6e7681;
+  }
+  *{box-sizing:border-box}
+  /* .wrap sets display:grid, which would otherwise beat the UA [hidden] rule */
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{display:flex;align-items:center;gap:16px;padding:12px 18px;
+    border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+  header h1{font-size:15px;margin:0;letter-spacing:.5px}
+  header .meta{color:var(--dim);font-size:12px}
+  button{background:var(--accent);color:#04121f;border:0;border-radius:6px;
+    padding:7px 14px;font-weight:600;cursor:pointer}
+  button.secondary{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
+  button:disabled{opacity:.5;cursor:default}
+  .wrap{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;padding:14px}
+  @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);
+    margin:0;padding:10px 14px;border-bottom:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--panel2)}
+  tbody tr.sel{background:#1d2b3a}
+  .sym{font-weight:700}
+  .sub{color:var(--dim);font-size:11px}
+  .pill{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700}
+  .STRONG{background:rgba(63,185,80,.15);color:var(--good)}
+  .WATCH{background:rgba(210,153,34,.15);color:var(--warn)}
+  .NEUTRAL{background:rgba(110,118,129,.18);color:var(--dim)}
+  .AVOID{background:rgba(248,81,73,.15);color:var(--bad)}
+  .bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;min-width:54px;display:inline-block;vertical-align:middle}
+  .bar > i{display:block;height:100%}
+  .detail{padding:14px}
+  .detail .big{font-size:20px;font-weight:700}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0}
+  .kv div:nth-child(odd){color:var(--dim)}
+  .kv div:nth-child(even){text-align:right}
+  .grp{margin:14px 0}
+  .grp h3{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:0 0 6px}
+  ul{margin:0;padding-left:16px}
+  li{margin:3px 0}
+  .risk li{color:#ffb3ae}
+  .muted{color:var(--dim)}
+  textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);
+    border-radius:6px;padding:8px;font:inherit;resize:vertical;min-height:54px}
+  .spark{display:block}
+  a{color:var(--accent)}
+  .empty{padding:40px 14px;text-align:center;color:var(--dim)}
+  .llm{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px}
+  .tab{background:none;border:0;color:var(--dim);font-weight:600;padding:6px 10px;border-radius:6px}
+  .tab.on{background:var(--panel2);color:var(--fg)}
+  .agent{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-bottom:7px}
+  .agent .top{display:flex;align-items:baseline;gap:8px}
+  .agent .who{font-weight:700;font-size:12px}
+  .agent .rest{margin-left:auto;color:var(--dim);font-size:11px}
+  .call{padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700}
+  .long{background:rgba(63,185,80,.15);color:var(--good)}
+  .avoid{background:rgba(248,81,73,.15);color:var(--bad)}
+  .pass{background:rgba(110,118,129,.18);color:var(--dim)}
+  .conv{display:inline-block;height:5px;border-radius:3px;background:var(--accent);vertical-align:middle}
+  .split{border-left:3px solid var(--warn);padding-left:8px}
+  .arb{border:1px solid var(--accent);background:rgba(77,163,255,.07)}
+  .cal{display:flex;gap:3px;align-items:flex-end;height:26px}
+  .cal i{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}
+  .cal .miss{background:var(--line)}
+  .beats{color:var(--good);font-weight:700}
+  .loses{color:var(--bad);font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>degen&#8203;-radar</h1>
+  <button class="tab on" id="tabRadar">Radar</button>
+  <button class="tab" id="tabScore">Scorecard</button>
+  <button id="scan">Run scan</button>
+  <span class="meta" id="status">loading&hellip;</span>
+  <label class="meta" style="margin-left:auto"><input type="checkbox" id="auto"> auto-refresh 60s</label>
+</header>
+
+<div class="wrap" id="radarView">
+  <div class="card">
+    <h2>Trending &mdash; composite score</h2>
+    <div id="tableWrap"><div class="empty">No scan yet. Hit &ldquo;Run scan&rdquo; (first scan ~30&ndash;90s).</div></div>
+  </div>
+  <div class="card">
+    <h2>Read</h2>
+    <div id="detail"><div class="empty">Select a token.</div></div>
+  </div>
+</div>
+
+<div id="scoreView" hidden style="padding:14px;display:grid;gap:14px">
+  <div class="card">
+    <h2>Agent scorecards &mdash; measured, not claimed</h2>
+    <div id="scoreWrap"><div class="empty">loading&hellip;</div></div>
+  </div>
+  <div class="card">
+    <h2>Open predictions</h2>
+    <div id="openWrap"><div class="empty">loading&hellip;</div></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let STATE = { tokens: [], ts: null }, SELECTED = null;
+
+const fmtUsd = n => n>=1e6 ? '$'+(n/1e6).toFixed(2)+'M'
+  : n>=1e3 ? '$'+(n/1e3).toFixed(1)+'k'
+  : '$'+(+n).toFixed(n<1?6:2);
+const pct = n => (n>=0?'+':'')+(+n).toFixed(1)+'%';
+const clr = n => n>0?'var(--good)':n<0?'var(--bad)':'var(--dim)';
+const esc = s => String(s??'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+const bar = (v, color) =>
+  `<div class="bar"><i style="width:${Math.max(2,Math.min(100,v))}%;background:${color}"></i></div>`;
+const scoreColor = v => v>=76?'var(--good)':v>=60?'var(--warn)':'var(--neutral)';
+
+function sparkline(vals, w=260, h=44){
+  vals = (vals||[]).filter(v => typeof v === 'number');
+  if(vals.length<2) return '<span class="muted">no history yet &mdash; run a few scans</span>';
+  const mn=Math.min(...vals), mx=Math.max(...vals), rng=(mx-mn)||1;
+  const pts=vals.map((v,i)=>{
+    const x=(i/(vals.length-1))*w, y=h-((v-mn)/rng)*h;
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${pts}"/></svg>`;
+}
+const list = arr => (arr&&arr.length)
+  ? '<ul>'+arr.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>'
+  : '<p class="muted">none</p>';
+
+async function loadStatus(){
+  const s = await fetch('/api/status').then(r=>r.json()).catch(()=>({}));
+  const spend = s.spendToday != null
+    ? ` &middot; $${s.spendToday.toFixed(3)}/$${s.spendCapDay ?? '?'} today` : '';
+  $('#status').innerHTML = (s.running?'scanning&hellip; ':'')
+    + (STATE.ts ? 'last scan '+new Date(STATE.ts*1000).toLocaleTimeString() : 'idle')
+    + (s.agentsEnabled?' &middot; panel on'+spend
+       : s.agentsConfigured?' &middot; panel disabled in config':' &middot; rule-based (no API key)')
+    + (s.lastGraded?.graded ? ` &middot; graded ${s.lastGraded.graded}` : '')
+    + (s.lastError?' &middot; <span style="color:var(--bad)">'+esc(s.lastError)+'</span>':'');
+  $('#scan').disabled = !!s.running;
+  if(s.running) setTimeout(()=>{ loadStatus(); loadTokens(); }, 3000);
+}
+
+function agentCard(id, a, extraClass=''){
+  if(!a) return '';
+  if(a.error)   return `<div class="agent ${extraClass}"><b class="who">${esc(id)}</b> <span class="muted">error: ${esc(a.error)}</span></div>`;
+  if(a.skipped) return `<div class="agent ${extraClass}"><b class="who">${esc(id)}</b> <span class="muted">skipped &mdash; ${esc(a.skipped)}</span></div>`;
+  const conv = Math.round((a.conviction||0)*100);
+  const extra = [];
+  if(a.flow_quality) extra.push('flow: '+a.flow_quality);
+  if(a.narrative_strength) extra.push('narrative: '+a.narrative_strength);
+  if(a.attention_is_organic) extra.push('organic: '+a.attention_is_organic);
+  if(a.meta_fit) extra.push('meta: '+a.meta_fit);
+  if(a.rug_probability!=null) extra.push('rug p: '+a.rug_probability);
+  if(a.panel_agreement) extra.push('panel: '+a.panel_agreement);
+  return `<div class="agent ${extraClass}">
+    <div class="top">
+      <span class="who">${esc(id)}</span>
+      <span class="call ${esc(a.call)}">${esc(a.call)}</span>
+      <span class="sub">${esc(a.predicted_direction)} / ${a.horizon_minutes}m</span>
+      <span class="rest">conviction ${conv}%
+        <span class="conv" style="width:${Math.max(4,conv*0.5)}px"></span></span>
+    </div>
+    ${a.one_liner? `<p style="margin:6px 0 4px"><b>${esc(a.one_liner)}</b></p>`:''}
+    <p style="margin:5px 0">${esc(a.reasoning)}</p>
+    ${a.bear_case? `<p style="margin:5px 0;color:#ffb3ae"><b>Bear:</b> ${esc(a.bear_case)}</p>`:''}
+    ${a.panel_blindspot? `<p style="margin:5px 0;color:var(--warn)"><b>Blindspot:</b> ${esc(a.panel_blindspot)}</p>`:''}
+    ${a.position_framing? `<p style="margin:5px 0"><b>Framing:</b> ${esc(a.position_framing)}</p>`:''}
+    ${a.exit_trigger? `<p style="margin:5px 0"><b>Exit:</b> ${esc(a.exit_trigger)}</p>`:''}
+    ${a.key_risk? `<p class="sub" style="margin:4px 0">risk: ${esc(a.key_risk)}</p>`:''}
+    ${a.blocking_flags?.length? `<p class="sub" style="margin:4px 0">flags: ${esc(a.blocking_flags.join(', '))}</p>`:''}
+    <p class="sub" style="margin:4px 0">${esc(extra.join(' &middot; '))}
+      ${a.invalidation_pct!=null? ` &middot; invalidates at ${a.invalidation_pct>0?'+':''}${a.invalidation_pct}%`:''}</p>
+  </div>`;
+}
+
+function panelHtml(panel){
+  if(!panel) return `<div class="grp"><h3>Agent panel</h3>
+    <p class="muted">Not promoted this scan &mdash; the composite didn't clear the gate, or the
+    feature vector hadn't moved enough since the last read to be worth re-asking.</p></div>`;
+  const ag = panel.agents || {};
+  const order = ['arbiter','redteam','microstructure','narrative','forensics'];
+  const calls = order.filter(k=>ag[k]?.call).map(k=>ag[k].call);
+  const split = new Set(calls).size > 1;
+  return `<div class="grp"><h3>Agent panel
+      <span class="sub">&mdash; promoted: ${esc(panel.promotedBecause)} &middot; cost $${(panel.cost||0).toFixed(4)}</span></h3>
+    ${split? '<p class="sub" style="color:var(--warn)">Panel is SPLIT &mdash; disagreement is information, read the red team.</p>':''}
+    <div class="${split?'split':''}">
+      ${order.map(k=>agentCard(k, ag[k], k==='arbiter'?'arb':'')).join('')}
+    </div></div>`;
+}
+
+async function loadTokens(){
+  STATE = await fetch('/api/tokens').then(r=>r.json()).catch(()=>STATE);
+  renderTable();
+  if(SELECTED){
+    const t = STATE.tokens.find(x=>x.feat.mint===SELECTED);
+    if(t) renderDetail(t);
+  }
+  loadStatus();
+}
+
+function renderTable(){
+  if(!STATE.tokens.length) return;
+  const rows = STATE.tokens.map(t=>{
+    const s=t.score, f=t.feat;
+    return `<tr class="${f.mint===SELECTED?'sel':''}" data-mint="${esc(f.mint)}">
+      <td><span class="sym">${esc(f.symbol||'?')}</span><br>
+          <span class="sub">${esc((f.name||'').slice(0,22))}</span></td>
+      <td><b style="color:${scoreColor(s.composite)}">${s.composite.toFixed(0)}</b><br>
+          <span class="pill ${s.verdict}">${s.verdict}</span></td>
+      <td>${bar(s.attention,'var(--accent)')} <span class="sub">${s.attention.toFixed(0)}</span></td>
+      <td>${bar(s.momentum,'var(--good)')} <span class="sub">${s.momentum.toFixed(0)}</span></td>
+      <td>${bar(s.liquidityHealth,'#7ee787')} <span class="sub">${s.liquidityHealth.toFixed(0)}</span></td>
+      <td>${bar(s.risk,'var(--bad)')} <span class="sub">${s.risk.toFixed(0)}</span></td>
+      <td style="color:${clr(f.priceChange.h1)}">${pct(f.priceChange.h1)}</td>
+      <td>${fmtUsd(f.liqUsd)}</td>
+      <td>${fmtUsd(f.mcap)}</td>
+      <td class="sub">${f.ageH<1? Math.round(f.ageH*60)+'m' : f.ageH.toFixed(0)+'h'}</td>
+    </tr>`;
+  }).join('');
+  $('#tableWrap').innerHTML = `<table><thead><tr>
+      <th>Token</th><th>Score</th><th>Att</th><th>Mom</th><th>Liq</th><th>Risk</th>
+      <th>1h</th><th>Liq&nbsp;$</th><th>MCap</th><th>Age</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+  $('#tableWrap').querySelectorAll('tr[data-mint]').forEach(tr=>{
+    tr.onclick = ()=>{ SELECTED = tr.dataset.mint; renderTable();
+      const t = STATE.tokens.find(x=>x.feat.mint===SELECTED); if(t) renderDetail(t); };
+  });
+}
+
+async function renderDetail(t){
+  const { feat:f, score:s, advice:a, panel } = t;
+  const hist = await fetch('/api/history/'+encodeURIComponent(f.mint)).then(r=>r.json()).catch(()=>[]);
+  const llmHtml = panelHtml(panel);
+
+  $('#detail').innerHTML = `<div class="detail">
+    <div class="big">${esc(f.symbol||'?')} <span class="pill ${s.verdict}">${s.verdict}</span></div>
+    <div class="sub">${esc(f.name||'')} &middot; ${esc(f.dex||'')} &middot;
+      <a href="${esc(f.url)}" target="_blank" rel="noopener">DEX Screener &#8599;</a></div>
+
+    <div class="grp"><h3>Composite ${s.composite.toFixed(1)} &middot; score history</h3>
+      ${sparkline(hist.map(h=>h.composite))}</div>
+
+    <div class="kv">
+      <div>Price</div><div>${fmtUsd(f.priceUsd)}</div>
+      <div>Liquidity</div><div>${fmtUsd(f.liqUsd)}</div>
+      <div>Market cap</div><div>${fmtUsd(f.mcap)}</div>
+      <div>Liq / MCap</div><div>${(f.liqMcapRatio*100).toFixed(1)}%</div>
+      <div>Age</div><div>${f.ageH.toFixed(1)} h</div>
+      <div>5m / 1h / 6h</div><div>
+        <span style="color:${clr(f.priceChange.m5)}">${pct(f.priceChange.m5)}</span> /
+        <span style="color:${clr(f.priceChange.h1)}">${pct(f.priceChange.h1)}</span> /
+        <span style="color:${clr(f.priceChange.h6)}">${pct(f.priceChange.h6)}</span></div>
+      <div>Vol 1h / 24h</div><div>${fmtUsd(f.volume.h1)} / ${fmtUsd(f.volume.h24)}</div>
+      <div>Vol accel</div><div>${f.volAccel.toFixed(2)}x</div>
+      <div>Tx velocity</div><div>${f.txVelocity.toFixed(2)}x</div>
+      <div>1h buy flow</div><div>${(f.buyRatioH1*100).toFixed(0)}% buys</div>
+      <div>24h turnover</div><div>${f.turnoverH24.toFixed(1)}x liq</div>
+      <div>Boost</div><div>${f.hasBoost? f.boostAmount.toFixed(0):'&mdash;'}</div>
+    </div>
+
+    <div class="grp"><h3>Phase &mdash; ${esc(a.phase)} (confidence: ${esc(a.confidence)})</h3>
+      <p>${esc(a.phaseNote)}</p></div>
+    <div class="grp"><h3>Thesis</h3>${list(a.thesis)}</div>
+    <div class="grp risk"><h3>Risks</h3>${list(a.risks)}</div>
+    <div class="grp"><h3>Invalidation &mdash; your stop list</h3>${list(a.invalidation)}</div>
+    <div class="grp"><h3>Not visible to this prototype yet</h3>${list(a.missingChecks)}</div>
+    ${llmHtml}
+    <div class="grp"><h3>Framing</h3><p class="muted">${esc(a.framing)}</p></div>
+
+    <div class="grp"><h3>Your notes (fed into the LLM layer)</h3>
+      <textarea id="note">${esc(t.note||'')}</textarea>
+      <button class="secondary" id="saveNote" style="margin-top:6px">Save note</button></div>
+  </div>`;
+
+  $('#saveNote').onclick = async ()=>{
+    await fetch('/api/note/'+encodeURIComponent(f.mint),{method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({note:$('#note').value})});
+    $('#saveNote').textContent='Saved'; setTimeout(()=>$('#saveNote').textContent='Save note',1200);
+  };
+}
+
+// ---------- scorecard: the curation loop, made visible ----------
+
+function calBar(cal){
+  if(!cal?.some(b=>b.n)) return '<span class="muted">no graded calls</span>';
+  return `<div class="cal" title="stated conviction vs actual hit rate">${
+    cal.map(b=>{
+      if(!b.n) return '<i class="miss" style="height:1px"></i>';
+      const h = Math.max(2, (b.actual||0)*26);
+      return `<i style="height:${h}px" title="${b.bucket}: n=${b.n}, stated ${b.stated}, actual ${b.actual}"></i>`;
+    }).join('')}</div>
+    <span class="sub">${cal.filter(b=>b.n).map(b=>`${b.bucket}:${b.actual==null?'-':Math.round(b.actual*100)+'%'}`).join(' ')}</span>`;
+}
+
+async function loadScorecard(){
+  const sc = await fetch('/api/scorecard').then(r=>r.json()).catch(()=>null);
+  if(!sc) return;
+  const t = sc.totals;
+  const rows = Object.entries(sc.agents).map(([id,a])=>{
+    const vb = sc.vs_baseline[id];
+    return `<tr>
+      <td><span class="sym">${esc(id)}</span>${a.unproven && a.n_graded? '<br><span class="sub">unproven (&lt;10)</span>':''}</td>
+      <td>${a.n_graded||0}<span class="sub">/${a.n_calls}</span></td>
+      <td>${a.hit_rate==null?'&mdash;':`<b style="color:${a.hit_rate>=0.5?'var(--good)':'var(--bad)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
+      <td>${a.brier==null?'&mdash;':a.brier}</td>
+      <td style="text-align:left">${calBar(a.calibration)}</td>
+      <td>${a.longs?.n||0}</td>
+      <td>${a.longs?.expectancy_pct==null?'&mdash;':`<span style="color:${a.longs.expectancy_pct>0?'var(--good)':'var(--bad)'}">${a.longs.expectancy_pct>0?'+':''}${a.longs.expectancy_pct}%</span>`}</td>
+      <td>${a.longs?.rugged||0}</td>
+      <td>$${(a.cost_usd||0).toFixed(3)}</td>
+      <td>${vb? (vb.beats_baseline?`<span class="beats">+${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`:`<span class="loses">${(vb.hit_rate_delta*100).toFixed(0)}pp</span>`) : (id==='baseline_rules'?'<span class="sub">benchmark</span>':'&mdash;')}</td>
+    </tr>`;
+  }).join('');
+
+  $('#scoreWrap').innerHTML = `
+    <div style="padding:10px 14px" class="sub">
+      ${t.predictions} predictions logged &middot; ${t.graded} graded &middot; ${t.open} still open
+      &middot; total spend $${t.spend_usd.toFixed(4)}
+      <br>Hit rate = predicted direction matched the realised move (&plusmn;5% dead band).
+      Brier: lower is better, 0.25 = a coin flip asserted at 50%.
+      &ldquo;vs base&rdquo; compares each paid agent to the free deterministic score &mdash;
+      an agent that can&rsquo;t beat it isn&rsquo;t worth paying for.
+    </div>
+    <table><thead><tr>
+      <th>Agent</th><th>Graded</th><th>Hit</th><th>Brier</th>
+      <th style="text-align:left">Calibration</th>
+      <th>Longs</th><th>Long EV</th><th>Rugged</th><th>Spend</th><th>vs base</th>
+    </tr></thead><tbody>${rows || '<tr><td colspan="10" class="muted">no predictions yet &mdash; run a scan</td></tr>'}</tbody></table>`;
+
+  const open = await fetch('/api/ledger/open').then(r=>r.json()).catch(()=>[]);
+  $('#openWrap').innerHTML = open.length ? `<table><thead><tr>
+      <th>Token</th><th>Agent</th><th>Call</th><th>Dir</th><th>Conv</th>
+      <th>Entry</th><th>Horizon</th><th>Grades in</th>
+    </tr></thead><tbody>${open.slice(0,60).map(o=>`<tr>
+      <td><span class="sym">${esc(o.symbol||'?')}</span></td>
+      <td class="sub">${esc(o.agent)}</td>
+      <td><span class="call ${esc(o.call)}">${esc(o.call)}</span></td>
+      <td class="sub">${esc(o.predicted_direction)}</td>
+      <td>${Math.round((o.conviction||0)*100)}%</td>
+      <td class="sub">${fmtUsd(o.entry_price)}</td>
+      <td class="sub">${o.horizon_minutes}m</td>
+      <td class="sub">${Math.max(0,Math.round(o.seconds_left/60))}m</td>
+    </tr>`).join('')}</tbody></table>`
+    : '<div class="empty">Nothing in flight. Predictions appear here until their horizon elapses.</div>';
+}
+
+function showTab(which){
+  const radar = which==='radar';
+  $('#radarView').hidden = !radar;
+  $('#scoreView').hidden = radar;
+  $('#tabRadar').classList.toggle('on', radar);
+  $('#tabScore').classList.toggle('on', !radar);
+  if(!radar) loadScorecard();
+}
+$('#tabRadar').onclick = ()=>showTab('radar');
+$('#tabScore').onclick = ()=>showTab('score');
+
+$('#scan').onclick = async ()=>{ $('#scan').disabled=true; await fetch('/api/scan',{method:'POST'}); loadStatus(); };
+$('#auto').onchange = e =>{
+  if(window._auto) clearInterval(window._auto);
+  if(e.target.checked) window._auto = setInterval(()=>{
+    loadTokens(); if($('#scoreView').hidden===false) loadScorecard();
+  }, 60000);
+};
+
+loadTokens();
+</script>
+</body>
+</html>

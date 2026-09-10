@@ -1,0 +1,10 @@
+{
+  "_comment": "Accounts whose involvement is itself a catalyst (taxonomy #17/#18). weight 0..1. Used by src/twitter.mjs once wired.",
+  "kols": [
+    { "handle": "example_tier1_kol", "weight": 1.0, "note": "replace with real handles you track" },
+    { "handle": "example_tier2_kol", "weight": 0.6 }
+  ],
+  "telegramChannels": [
+    { "name": "example_alpha_channel", "edge": 0.7, "note": "replace with the channels behind your session; edge = realised historical hit-rate weighting" }
+  ]
+}
