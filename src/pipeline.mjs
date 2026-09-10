@@ -14,6 +14,8 @@ import { sourceStamp, restartIfSourceChanged } from "./reload.mjs";
 import * as ohlcv from "./ohlcv.mjs";
 import { computeAura, auraPrediction } from "./aura.mjs";
 import { rugClock, rugPrediction } from "./rugclock.mjs";
+import { buildBoard } from "./horizons.mjs";
+import * as briefs from "./briefs.mjs";
 import { buildFeatures } from "./features.mjs";
 import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
@@ -209,9 +211,32 @@ export async function runScan({ cfg, verbose = true } = {}) {
     agents = { ran: false, reason: e.message };
   }
 
+  // --- THE HORIZON BOARD: one read per timescale, archived as a brief. ---
+  let board = null;
+  if (cfg.horizons?.enabled !== false) {
+    board = buildBoard(rows, { minScore: cfg.horizons?.minScore ?? 0.42 });
+    briefs.archive(board);
+    for (const h of board.horizons) {
+      // Screens are not forecasts and are not logged as if they were.
+      if (h.kind !== 'forecast') continue;
+      for (const p of h.picks.slice(0, 1)) {
+        const row = rows.find((r) => r.feat.mint === p.mint);
+        if (!row) continue;
+        ledger.record({ agent: `board:${h.id}`, model: 'horizon-board', cost: 0,
+          phase: row.advice.phase, feat: row.feat, score: row.score,
+          pred: { call: 'long', predicted_direction: 'up', horizon_minutes: h.horizonMinutes,
+            conviction: Math.round(p.score) / 100, invalidation_pct: -30,
+            reasoning: p.why.join('; ') || `board pick for ${h.label}`,
+            key_risk: p.rug != null ? `rug pressure ${p.rug}` : 'memecoin base rate' } });
+      }
+    }
+    if (verbose) console.log('[board] ' + board.horizons.map((h) =>
+      `${h.id}:${h.empty ? 'none' : h.picks[0].symbol}`).join(' | '));
+  }
+
   const ts = store.saveScan(rows);
   if (verbose) console.log(`[scan] saved ${rows.length} tokens in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-  return { ts, tokens: rows, graded, agents, telegram, macro };
+  return { ts, tokens: rows, graded, agents, telegram, macro, board };
 }
 
 export async function loop(cfg) {

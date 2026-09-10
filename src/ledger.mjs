@@ -23,7 +23,7 @@ const MAX_ROWS = 20000;
 // with how violent the asset class is: the observed median 60-minute move on
 // this scanner's universe is ~18%, so a fixed +/-5% band made "flat" almost
 // never correct and quietly turned the hit rate into noise.
-const FLAT_BANDS = { 15: 8, 60: 18, 360: 35 };
+const FLAT_BANDS = { 15: 8, 60: 18, 360: 35, 1440: 60, 14400: 120 };
 export function flatBandFor(horizonMinutes) {
   return FLAT_BANDS[horizonMinutes] ?? 18;
 }

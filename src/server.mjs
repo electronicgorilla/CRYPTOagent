@@ -65,6 +65,24 @@ const server = createServer(async (req, res) => {
     // already on screen in one batched DEX Screener call (~1 call per tick,
     // against a 300/min ceiling), so the interface can move every 10s
     // without multiplying discovery load or touching the ledger.
+    if (p === "/api/board") {
+      const briefs = await import("./briefs.mjs");
+      return send(res, 200, briefs.latest() || { ts: null, horizons: [] });
+    }
+    if (p === "/api/briefs") {
+      const briefs = await import("./briefs.mjs");
+      const rows = ledger.load();
+      const list = briefs.list(Number(url.searchParams.get("limit")) || 30);
+      // Attach outcomes so an archived brief shows what actually happened.
+      for (const b of list) for (const h of b.horizons) for (const pk of h.picks) {
+        const led = rows.filter((r) => r.mint === pk.mint && r.agent === `board:${h.id}` &&
+          Math.abs(r.ts - b.ts) < 120);
+        const g = led.find((r) => r.outcome);
+        pk.outcome = g ? g.outcome : null;
+      }
+      return send(res, 200, list);
+    }
+
     if (p === "/api/observations") {
       const obs = await import("./observations.mjs");
       const m = url.searchParams.get("mint");

@@ -126,6 +126,11 @@
     "inflowWindowMinutes": 30,
     "alertAt": 60
   },
+  "horizons": {
+    "_comment": "Horizon board: separate reads for 5-10min (ignition), 1-5h (durability) and 1-10d (SURVIVAL SCREEN, not a forecast - there is no validated multi-day signal here). Each brief is archived to data/briefs so the board accumulates a track record.",
+    "enabled": true,
+    "minScore": 0.42
+  },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",
     "enabled": true,

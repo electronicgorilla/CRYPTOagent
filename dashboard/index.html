@@ -139,6 +139,35 @@
   .cols small{color:var(--muted);display:block;font-size:10.5px}
   .sheetfoot{padding:12px 18px;border-top:1px solid var(--rule);display:flex;gap:10px;align-items:center}
   .empty{padding:50px;text-align:center;color:var(--muted);font-family:var(--serif);font-size:15px}
+  /* ---------- horizon board (right rail) ---------- */
+  .board{position:fixed;right:0;top:46px;bottom:26px;width:332px;background:var(--surface);
+    border-left:1px solid var(--hairline);overflow:auto;z-index:35;transition:transform .2s}
+  .board.hid{transform:translateX(100%)}
+  .board h4{font-family:var(--serif);font-size:15px;color:var(--gold);margin:0;
+    padding:11px 14px;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:8px}
+  .board h4 span{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .hz{border-bottom:1px solid var(--rule);padding:11px 14px}
+  .hz .hd{display:flex;align-items:baseline;gap:8px;margin-bottom:7px}
+  .hz .lab{font-family:var(--serif);font-size:14px;color:var(--ink)}
+  .hz .tag{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--gold-dim);
+    border:1px solid var(--rule);padding:0 5px;margin-left:auto}
+  .hz .tag.screen{color:var(--warn);border-color:rgba(250,178,25,.4)}
+  .pick{display:block;text-decoration:none;color:inherit;border:1px solid var(--rule);
+    padding:8px 10px;margin-bottom:6px;background:var(--surface-2);transition:.13s}
+  .pick:hover{border-color:var(--gold-dim);background:var(--surface-3)}
+  .pick .r1{display:flex;align-items:baseline;gap:8px}
+  .pick .tk{font-family:var(--serif);font-size:15px;color:var(--ink)}
+  .pick .sc{margin-left:auto;font-family:var(--mono);font-size:14px;color:var(--gold)}
+  .pick .meta{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:2px}
+  .pick ul{margin:5px 0 0;padding-left:14px}
+  .pick li{font-size:11px;margin:2px 0;color:var(--ink-2)}
+  .pick .flag{color:var(--down);font-size:10.5px;margin-top:4px}
+  .hz .none{font-size:11.5px;color:var(--muted);font-style:italic;line-height:1.5}
+  .warnbox{font-size:11px;color:var(--warn);background:rgba(250,178,25,.07);
+    border-left:2px solid var(--warn);padding:6px 9px;margin-bottom:7px;line-height:1.5}
+  .boardToggle{position:fixed;right:0;top:52px;z-index:36;background:var(--surface);
+    border:1px solid var(--hairline);border-right:0;color:var(--gold);cursor:pointer;
+    font:inherit;font-size:11px;padding:5px 8px;writing-mode:vertical-rl}
   #tip{position:fixed;pointer-events:none;z-index:99;background:var(--surface-3);
     border:1px solid var(--hairline);padding:7px 11px;font-size:12px;max-width:290px;
     box-shadow:0 12px 34px rgba(0,0,0,.75);opacity:0;transition:opacity .1s}
@@ -156,6 +185,7 @@
     <button class="tab" data-v="Fc">Forecast</button>
     <button class="tab" data-v="Tg">Telegram</button>
     <button class="tab" data-v="Score">Scorecard</button>
+    <button class="tab" data-v="Brief">Briefs</button>
     <button class="tab" data-v="Adapt">Adaptation</button>
   </div>
   <select id="tpl" title="Column template"></select>
@@ -174,6 +204,9 @@
   <div class="gridwrap" id="gridwrap"><div class="empty">No scan yet.</div></div>
   <div class="side" id="side"></div>
 </div>
+
+<button class="boardToggle" id="boardToggle" hidden>BOARD</button>
+<aside class="board" id="board"></aside>
 
 <div class="status">
   <span>SCAN <b id="stScan">—</b></span>
@@ -495,13 +528,39 @@ function renderRail(){
   $('#stRegime').textContent=MACRO&&MACRO.available?MACRO.regime:'n/a';
 }
 
+// The horizon board. Three different questions, not one ranking split three
+// ways: what ignites in minutes, what has fuel for the session, and what is
+// merely likely to still exist next week.
+async function loadBoard(){
+  const b=await fetch('/api/board').then(r=>r.json()).catch(()=>null);
+  const el=$('#board'); if(!el) return;
+  if(!b||!b.horizons||!b.horizons.length){el.innerHTML='<h4>Horizon board</h4><div class="hz none" style="padding:14px">No brief yet — run a scan.</div>';return;}
+  el.innerHTML=`<h4>Horizon board <span>${b.ts?new Date(b.ts*1000).toLocaleTimeString('en-GB'):''}</span>
+    <button class="ui" id="boardHide" style="padding:1px 6px;font-size:10px">hide</button></h4>
+  ${b.horizons.map(h=>`<div class="hz">
+    <div class="hd"><span class="lab">${h.label}</span>
+      <span class="tag ${h.kind==='screen'?'screen':''}">${h.kind}</span></div>
+    ${h.kind==='screen'?'<div class="warnbox">A screen, not a forecast. There is no validated multi-day signal here and most of these tokens will not exist in ten days — this ranks survival traits only.</div>':''}
+    ${h.empty?`<div class="none">Nothing clears the bar.${h.best_rejected?` Best candidate was ${esc(h.best_rejected.symbol)} at ${h.best_rejected.score}.`:''} An empty tier is a real answer.</div>`
+      :h.picks.map(p=>`<a class="pick" href="${esc(p.url||'#')}" target="_blank" rel="noopener">
+        <div class="r1"><span class="tk">${esc(p.symbol||'?')}</span>
+          <span class="nm">${esc((p.name||'').slice(0,16))}</span><span class="sc">${p.score}</span></div>
+        <div class="meta">${usd(p.mcap)} mcap · ${usd(p.liq)} liq${p.rug!=null?` · rug ${p.rug}`:''}</div>
+        <ul>${(p.why||[]).slice(0,3).map(w=>`<li>${esc(w)}</li>`).join('')}</ul>
+        ${p.penalised?'<div class="flag">discounted — rug pressure elevated</div>':''}
+      </a>`).join('')}
+  </div>`).join('')}`;
+  $('#boardHide').onclick=()=>{el.classList.add('hid');$('#boardToggle').hidden=false;};
+}
+$('#boardToggle').onclick=()=>{$('#board').classList.remove('hid');$('#boardToggle').hidden=true;};
+
 async function loadAll(){
   const [d,m,s]=await Promise.all([
     fetch('/api/tokens').then(r=>r.json()).catch(()=>null),
     fetch('/api/regime').then(r=>r.json()).catch(()=>null),
     fetch('/api/status').then(r=>r.json()).catch(()=>({}))]);
   if(d)STATE=d; MACRO=m;
-  renderRail(); renderGrid(); if(SEL) renderSide();
+  renderRail(); renderGrid(); if(SEL) renderSide(); loadBoard();
   $('#stScan').textContent=STATE.ts?new Date(STATE.ts*1000).toLocaleTimeString('en-GB'):'—';
   $('#stMsg').innerHTML=s.lastError?`<span style="color:var(--down)">${esc(s.lastError)}</span>`:'';
   $('#scan').disabled=!!s.running;
@@ -566,6 +625,25 @@ async function renderOther(){
         <td class="r">${r.n}</td><td class="r"><span class="${r.ic>0?'up':'down'}">${r.ic>0?'+':''}${r.ic}</span></td>
         <td class="c">${r.significant?'<span class="up">signal</span>':'<span class="zero">noise</span>'}</td></tr>`).join('')}
       </tbody></table>`:'<div class="empty">No graded samples with feature vectors yet.</div>'}`;
+  } else if(VIEW==='Brief'){
+    const list=await fetch('/api/briefs?limit=25').then(r=>r.json()).catch(()=>[]);
+    wrap.innerHTML=`<div class="note">Every brief the board has published, newest first — <b>including the
+      ones it got wrong</b>. Forecast tiers are logged to the ledger and graded, so each pick eventually
+      shows what actually happened. The 1–10 day tier is a screen and is deliberately not graded as a
+      forecast.</div>${list.length?list.map(b=>`
+      <div style="border-bottom:1px solid var(--rule);padding:11px 16px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--gold-dim);margin-bottom:6px">
+          ${new Date(b.ts*1000).toLocaleString('en-GB')}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${b.horizons.map(h=>`<div><div class="nm" style="margin-bottom:4px">${h.label}</div>
+          ${h.empty?'<span class="zero" style="font-size:12px">—</span>'
+            :h.picks.slice(0,1).map(p=>`<div><span class="sym">${esc(p.symbol||'?')}</span>
+              <span style="font-family:var(--mono);color:var(--gold)"> ${p.score}</span>
+              ${p.outcome?`<div style="font-family:var(--mono);font-size:11px" class="${p.outcome.return_pct>0?'up':'down'}">
+                ${p.outcome.return_pct>0?'+':''}${p.outcome.return_pct}%${p.outcome.dead?' (died)':''}</div>`
+                :'<div class="nm">open</div>'}</div>`).join('')}
+          </div>`).join('')}</div></div>`).join('')
+      :'<div class="empty">No briefs archived yet.</div>'}`;
   } else if(VIEW==='Fc'){
     tplName='Forecast'; initTpl(); renderGrid();
   }
