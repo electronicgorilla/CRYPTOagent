@@ -561,7 +561,15 @@ async function loadScorecard(){
 }
 
 // ---------- telegram ----------
+// Doctrine rule 3: a source that is right too often is either reading the same
+// tape you can read (followable) or knows first (you are the exit liquidity).
+function edgeCell(e){
+  if(!e || e.verdict==='insufficient-data') return `<span class="sub">needs ${e?.need??8} graded calls</span>`;
+  const col={inference:'var(--good)','insider-suspected':'var(--critical)',mixed:'var(--warn)','no-edge':'var(--muted)'}[e.verdict]||'var(--muted)';
+  return `<b style="color:${col}">${esc(e.verdict)}</b><br><span class="sub">${esc((e.note||'').slice(0,95))}</span>`;
+}
 async function loadTelegram(){
+  const edge = await fetch('/api/edge').then(r=>r.json()).catch(()=>({}));
   const [tg,sc]=await Promise.all([
     fetch('/api/telegram').then(r=>r.json()).catch(()=>null),
     fetch('/api/scorecard').then(r=>r.json()).catch(()=>null)]);
@@ -569,7 +577,7 @@ async function loadTelegram(){
   const chans=Object.entries(sc?.agents||{}).filter(([id])=>id.startsWith('tg:'));
 
   $('#tgScore').innerHTML = chans.length ? `<div class="scroll"><table><thead><tr>
-      <th>Channel</th><th>Calls</th><th>Graded</th><th>Hit</th><th>Long EV</th><th>Rugged</th><th>Status</th>
+      <th>Channel</th><th>Calls</th><th>Graded</th><th>Hit</th><th>Long EV</th><th>Rugged</th><th>Status</th><th style="text-align:left">Edge source</th>
     </tr></thead><tbody>${chans.map(([id,a])=>`<tr>
       <td><b>${esc(id.slice(3))}</b></td>
       <td class="num">${a.n_calls}</td><td class="num">${a.n_graded||0}</td>
@@ -579,7 +587,8 @@ async function loadTelegram(){
         :`<span class="${a.longs.expectancy_pct>0?'up':'down'}">${pct(a.longs.expectancy_pct)}</span>`}</td>
       <td class="num">${a.longs?.rugged||0}</td>
       <td>${a.n_graded?(a.unproven?'<span class="sub">unproven</span>':'<span class="beats">proven</span>')
-        :'<span class="sub">no history</span>'}</td></tr>`).join('')}</tbody></table></div>`
+        :'<span class="sub">no history</span>'}</td>
+      <td style="text-align:left">${edgeCell(edge[id.slice(3)])}</td></tr>`).join('')}</tbody></table></div>`
     : `<div class="note">No channels wired yet. Add handles to <code>telegram.channels</code> in
        config.json and set <code>enabled: true</code>.<br>
        Mode <b>public</b> needs no credentials but only reads PUBLIC channels (last ~20 posts).

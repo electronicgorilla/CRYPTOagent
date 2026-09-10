@@ -1,3 +1,4 @@
+import { promptFragment } from "../doctrine.mjs";
 // The agent roster.
 //
 // Design rule: an agent that cannot be SCORED does not belong on the dashboard.
@@ -35,7 +36,7 @@ function schema(extraProps = {}) {
   };
 }
 
-const SHARED_RULES = `
+const SHARED_RULES = promptFragment() + `
 You are one specialist in a panel analysing Solana memecoins. You see only your
 slice of the data on purpose - do not speculate about signals you were not given,
 say you cannot see them.
