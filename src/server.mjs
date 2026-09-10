@@ -61,6 +61,10 @@ const server = createServer(async (req, res) => {
 
     // --- curation loop ---
     if (p === "/api/scorecard") return send(res, 200, scorecard.build());
+    if (p === "/api/telegram") {
+      const { recentCalls } = await import("./telegram/calls.mjs");
+      return send(res, 200, { calls: recentCalls(), config: loadConfig().telegram });
+    }
     if (p === "/api/adapt") {
       const cfg = loadConfig();
       return send(res, 200, adapt.propose(cfg, cfg.adapt || {}));

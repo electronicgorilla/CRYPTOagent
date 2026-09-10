@@ -77,6 +77,15 @@
     "shrinkK": 250,
     "maxShift": 0.5
   },
+  "telegram": {
+    "_comment": "Channels as agents: every call is logged to the ledger as tg:<channel>, graded by the same grader, and ranked in the same scorecard. mode: public (no auth, PUBLIC channels only) | bot (TELEGRAM_BOT_TOKEN, bot must be channel admin) | mtproto (TELEGRAM_SESSION, sees everything your account sees).",
+    "enabled": false,
+    "mode": "public",
+    "channels": [],
+    "horizonMinutes": 60,
+    "maxMessageAgeMinutes": 90,
+    "fetchLimit": 30
+  },
   "agents": {
     "_comment": "The paid panel. Runs only when ANTHROPIC_API_KEY is set AND a token crosses the promotion gate. Tune promoteScore/deltaThreshold/staleMinutes to trade cost against coverage.",
     "enabled": true,

@@ -141,6 +141,7 @@
   <div class="tabs">
     <button class="tab on" id="tabRadar">Radar</button>
     <button class="tab" id="tabScore">Scorecard</button>
+    <button class="tab" id="tabTg">Telegram</button>
     <button class="tab" id="tabAdapt">Adaptation</button>
   </div>
   <button class="act" id="scan">Run scan</button>
@@ -168,6 +169,17 @@
   <div class="card">
     <h2>Open predictions</h2>
     <div id="openWrap"><div class="empty">loading…</div></div>
+  </div>
+</div>
+
+<div id="tgView" hidden style="padding:14px;display:grid;gap:14px">
+  <div class="card">
+    <h2>Channel scorecard <span class="r">which channels actually have edge</span></h2>
+    <div id="tgScore"><div class="empty">loading…</div></div>
+  </div>
+  <div class="card">
+    <h2>Recent calls</h2>
+    <div id="tgFeed"><div class="empty">loading…</div></div>
   </div>
 </div>
 
@@ -461,6 +473,43 @@ async function loadScorecard(){
     </tbody></table></div>`:'<div class="empty">Nothing in flight.</div>';
 }
 
+// ---------- telegram ----------
+async function loadTelegram(){
+  const [tg,sc]=await Promise.all([
+    fetch('/api/telegram').then(r=>r.json()).catch(()=>null),
+    fetch('/api/scorecard').then(r=>r.json()).catch(()=>null)]);
+  if(!tg) return;
+  const chans=Object.entries(sc?.agents||{}).filter(([id])=>id.startsWith('tg:'));
+
+  $('#tgScore').innerHTML = chans.length ? `<div class="scroll"><table><thead><tr>
+      <th>Channel</th><th>Calls</th><th>Graded</th><th>Hit</th><th>Long EV</th><th>Rugged</th><th>Status</th>
+    </tr></thead><tbody>${chans.map(([id,a])=>`<tr>
+      <td><b>${esc(id.slice(3))}</b></td>
+      <td class="num">${a.n_calls}</td><td class="num">${a.n_graded||0}</td>
+      <td class="num">${a.hit_rate==null?'<span class="sub">—</span>'
+        :`<b style="color:${a.hit_rate>=.5?'var(--good)':'var(--critical)'}">${Math.round(a.hit_rate*100)}%</b>`}</td>
+      <td class="num">${a.longs?.expectancy_pct==null?'—'
+        :`<span class="${a.longs.expectancy_pct>0?'up':'down'}">${pct(a.longs.expectancy_pct)}</span>`}</td>
+      <td class="num">${a.longs?.rugged||0}</td>
+      <td>${a.n_graded?(a.unproven?'<span class="sub">unproven</span>':'<span class="beats">proven</span>')
+        :'<span class="sub">no history</span>'}</td></tr>`).join('')}</tbody></table></div>`
+    : `<div class="note">No channels wired yet. Add handles to <code>telegram.channels</code> in
+       config.json and set <code>enabled: true</code>.<br>
+       Mode <b>public</b> needs no credentials but only reads PUBLIC channels (last ~20 posts).
+       For private channels use <b>bot</b> or <b>mtproto</b> — see <code>src/telegram/index.mjs</code>.</div>`;
+
+  $('#tgFeed').innerHTML = tg.calls?.length ? `<div class="scroll"><table><thead><tr>
+      <th>When</th><th>Channel</th><th>Token</th><th>Call</th><th>Conv</th><th>Outcome</th><th style="text-align:left">Message</th>
+    </tr></thead><tbody>${tg.calls.map(c=>`<tr>
+      <td class="num sub">${new Date(c.ts*1000).toLocaleTimeString()}</td>
+      <td class="sub">${esc(c.channel)}</td><td><b>${esc(c.symbol||'?')}</b></td>
+      <td><span class="call ${esc(c.call)}">${esc(c.call)}</span></td>
+      <td class="num">${Math.round((c.conviction||0)*100)}%</td>
+      <td class="num">${c.outcome?`<span class="${c.outcome.return_pct>0?'up':'down'}">${pct(c.outcome.return_pct)}</span>`:'<span class="sub">open</span>'}</td>
+      <td style="text-align:left;max-width:340px" class="sub">${esc((c.text||'').slice(0,110))}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="empty">No calls logged yet.</div>';
+}
+
 // ---------- adaptation ----------
 async function loadAdapt(){
   const a=await fetch('/api/adapt').then(r=>r.json()).catch(()=>null);
@@ -494,16 +543,18 @@ async function loadAdapt(){
 
 // ---------- tabs ----------
 function show(which){
-  for(const [id,view] of [['tabRadar','#radarView'],['tabScore','#scoreView'],['tabAdapt','#adaptView']]){
+  for(const [id,view] of [['tabRadar','#radarView'],['tabScore','#scoreView'],['tabTg','#tgView'],['tabAdapt','#adaptView']]){
     const on = id==='tab'+which;
     $('#'+id).classList.toggle('on',on);
     $(view).hidden=!on;
   }
   if(which==='Score') loadScorecard();
+  if(which==='Tg') loadTelegram();
   if(which==='Adapt') loadAdapt();
 }
 $('#tabRadar').onclick=()=>show('Radar');
 $('#tabScore').onclick=()=>show('Score');
+$('#tabTg').onclick=()=>show('Tg');
 $('#tabAdapt').onclick=()=>show('Adapt');
 
 $('#scan').onclick=async()=>{ $('#scan').disabled=true; await fetch('/api/scan',{method:'POST'}); loadStatus(); };

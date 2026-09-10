@@ -7,6 +7,7 @@ import * as rugcheck from "./rugcheck.mjs";
 import * as social from "./social.mjs";
 import { buildCohort, buildFomo } from "./fomo.mjs";
 import * as adapt from "./adapt.mjs";
+import { pollChannels } from "./telegram/calls.mjs";
 import { buildFeatures } from "./features.mjs";
 import { scoreToken, assignVerdicts } from "./scoring.mjs";
 import { generateAdvice } from "./advice.mjs";
@@ -95,6 +96,16 @@ export async function runScan({ cfg, verbose = true } = {}) {
   if (verbose) console.log(`[fomo] session ${cohort.regime} (breadth ${(cohort.breadth*100).toFixed(0)}% green)`);
   for (const r of rows) { delete r.pair; delete r.risk; }
 
+  // Telegram channels are agents too - poll them BEFORE grading so a call made
+  // this cycle is in the ledger, and an older one that just came due is graded.
+  let telegram = { ran: false };
+  try {
+    telegram = await pollChannels(cfg, rows, { verbose });
+  } catch (e) {
+    console.warn(`[telegram] failed: ${e.message}`);
+    telegram = { ran: false, reason: e.message };
+  }
+
   // Grade first: outcomes for past calls feed the scorecards the arbiter is
   // about to be handed. Free - one batched DEX Screener call, no tokens.
   let graded = { graded: 0 };
@@ -115,7 +126,7 @@ export async function runScan({ cfg, verbose = true } = {}) {
 
   const ts = store.saveScan(rows);
   if (verbose) console.log(`[scan] saved ${rows.length} tokens in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-  return { ts, tokens: rows, graded, agents };
+  return { ts, tokens: rows, graded, agents, telegram };
 }
 
 export async function loop(cfg) {
